@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heme Atlas — Curator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#f5f6f8;--surface:#ffffff;--surface2:#f0f2f5;--surface3:#e8ebf0;
+    --border:#e2e6ed;--border2:#c8cfd9;
+    --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+    --accent:#2563eb;--accent-light:#eff4ff;--accent-hover:#1d4ed8;
+    --green:#16a34a;--green-light:#f0fdf4;--green-border:#86efac;
+    --amber:#d97706;--amber-light:#fffbeb;--amber-border:#fcd34d;
+    --red:#dc2626;--red-light:#fef2f2;--red-border:#fca5a5;
+    --purple:#7c3aed;--purple-light:#f5f3ff;
+    --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:0 4px 16px rgba(0,0,0,.09);
+    --shadow-lg:0 10px 32px rgba(0,0,0,.12);
+    --radius:8px;--radius-lg:12px;--radius-xl:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+
+  /* ── HEADER ── */
+  .header{background:var(--surface);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 24px;gap:20px;box-shadow:var(--shadow);position:sticky;top:0;z-index:200}
+  .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logo-mark{width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;letter-spacing:-.5px}
+  .logo-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+  .logo-sub{font-size:11px;color:var(--text3);font-weight:400}
+  .header-div{width:1px;height:28px;background:var(--border)}
+  .search-wrap{flex:1;max-width:400px;position:relative}
+  .search-input{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none;transition:all .15s}
+  .search-input:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text4);font-size:14px;pointer-events:none}
+  .header-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .btn{padding:7px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .btn:hover{background:var(--surface2);color:var(--text)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:var(--accent-hover)}
+  .btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn.green:hover{background:#15803d}
+  .stat-badge{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);padding:5px 10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
+  .stat-badge strong{color:var(--text);font-weight:600}
+
+  /* ── LAYOUT ── */
+  .app-body{display:flex;height:calc(100vh - 56px);overflow:hidden}
+  .sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:12px 0}
+  .main-area{flex:1;overflow-y:auto;padding:24px}
+
+  /* ── SIDEBAR ── */
+  .sidebar-section{margin-bottom:4px}
+  .sidebar-header{padding:6px 16px;font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.8px;margin-top:8px}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;transition:all .12s;border-left:3px solid transparent}
+  .sidebar-item:hover{background:var(--surface2)}
+  .sidebar-item.active{background:var(--accent-light);border-left-color:var(--accent)}
+  .sidebar-item .si-label{flex:1;font-size:13px;font-weight:500;color:var(--text2)}
+  .sidebar-item.active .si-label{color:var(--accent);font-weight:600}
+  .sidebar-item .si-count{font-size:11px;font-weight:700;color:var(--text3);background:var(--surface2);padding:1px 7px;border-radius:20px;min-width:24px;text-align:center}
+  .sidebar-item.active .si-count{background:var(--accent-light);color:var(--accent)}
+  .flag-badge{font-size:10px;background:var(--red-light);color:var(--red);border-radius:10px;padding:1px 5px;font-weight:700}
+  .sidebar-divider{height:1px;background:var(--border);margin:8px 12px}
+
+  /* ── WELCOME ── */
+  .welcome-area{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;text-align:center}
+  .welcome-area h2{font-size:22px;font-weight:700}
+  .welcome-area p{color:var(--text2);max-width:380px;line-height:1.6;font-size:13px}
+  .gallery-loading-spinner{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:gspin .8s linear infinite}
+  @keyframes gspin{to{transform:rotate(360deg)}}
+  .load-zone{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:4px}
+
+  /* ── CATEGORY HEADER ── */
+  .cat-header{margin-bottom:20px}
+  .cat-title-row{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .cat-title{font-size:22px;font-weight:700;letter-spacing:-.4px}
+  .cat-subtitle{font-size:13px;color:var(--text3)}
+  .cat-pills{display:flex;gap:8px;flex-wrap:wrap}
+  .cat-pill{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600}
+  .cat-pill.total{background:var(--surface2);color:var(--text2)}
+  .cat-pill.finalized{background:var(--green-light);color:var(--green)}
+  .cat-pill.prelim{background:var(--amber-light);color:var(--amber)}
+  .cat-pill.flagged{background:var(--red-light);color:var(--red)}
+  .cat-pill.corrected{background:var(--purple-light);color:var(--purple)}
+
+  /* ── FILTER BAR ── */
+  .filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+  .filter-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text3);transition:all .15s}
+  .filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* ── CELL GRID ── */
+  .cell-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+
+  /* ── CELL CARD ── */
+  .cell-card{background:var(--surface);border-radius:var(--radius-lg);border:1.5px solid var(--border);overflow:hidden;cursor:pointer;transition:all .15s;position:relative}
+  .cell-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+  .cell-card.flagged{border-color:var(--red);background:#fff8f8}
+  .cell-card.corrected{border-color:var(--purple)}
+  .cell-card.poor{opacity:.75;border-style:dashed}
+  .cell-card.excluded{opacity:.5;border-style:dashed;border-color:var(--red)}
+  .cell-card.aberration-card{border-color:var(--amber);}
+  .cell-card.aberration-card .cell-card-label{color:var(--amber)}
+  .cell-card-img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface2);display:block}
+  .cell-card-body{padding:8px 10px}
+  .cell-card-label{font-size:12px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:3px}
+  .cell-card-meta{display:flex;gap:4px;flex-wrap:wrap}
+  .cc-pill{font-size:9.5px;padding:1px 6px;border-radius:10px;font-weight:600}
+  .cc-pill.fin{background:var(--green-light);color:var(--green)}
+  .cc-pill.pre{background:var(--amber-light);color:var(--amber)}
+  .cc-pill.border{background:var(--accent-light);color:var(--accent)}
+  .cc-pill.poor{background:var(--red-light);color:var(--red)}
+  .cc-pill.excl{background:var(--red-light);color:var(--red);font-weight:700}
+  .cc-pill.corr{background:var(--purple-light);color:var(--purple)}
+  .card-flag-dot{position:absolute;top:7px;right:7px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #fff;box-shadow:var(--shadow)}
+  .card-flag-dot.discussion{background:var(--red)}
+  .card-flag-dot.correction{background:var(--purple)}
+
+  /* ── CELL DETAIL PANEL ── */
+  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+  .detail-panel{background:#ffffff;border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(0,0,0,.35);width:760px;max-width:calc(100vw - 40px);height:80vh;max-height:640px;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:501}
+  .dp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .dp-title{font-size:15px;font-weight:700;flex:1}
+  .dp-close{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text3);transition:all .15s}
+  .dp-close:hover{background:var(--surface2);color:var(--text)}
+  .dp-body{display:flex;overflow:hidden;flex:1;min-height:0}
+  .dp-img-col{width:260px;flex-shrink:0;padding:16px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--border);overflow-y:auto}
+  .dp-cell-img{width:100%;border-radius:var(--radius-lg);border:2px solid var(--border);object-fit:contain;display:block;background:#f8f9fb;max-height:220px}
+  .dp-cell-img.poor{border-color:var(--red)}
+  .dp-info-col{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+  .dp-section-title{font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+  .dp-field-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+  .dp-field-label{font-size:11px;font-weight:600;color:var(--text3);width:110px;flex-shrink:0;padding-top:1px;text-transform:uppercase;letter-spacing:.3px}
+  .dp-field-val{font-size:12px;color:var(--text);flex:1}
+  .dp-pills{display:flex;gap:5px;flex-wrap:wrap}
+  .dp-section{padding:12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
+  .dp-section.flagged-section{background:var(--red-light);border-color:var(--red-border)}
+  .dp-section.corrected-section{background:var(--purple-light);border-color:#ddd6fe}
+  .dp-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ── FORMS INSIDE DETAIL ── */
+  .dp-input{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s}
+  .dp-input:focus{border-color:var(--accent)}
+  .dp-select{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none}
+  .dp-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
+  .dp-form-group{margin-bottom:10px}
+  .inline-form{background:#ffffff;border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px;margin-top:8px}
+  .inline-form h4{font-size:13px;font-weight:700;margin-bottom:10px}
+
+  /* ── AUDIT TRAIL ── */
+  .audit-item{font-size:11px;padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:8px}
+  .audit-item:last-child{border-bottom:none}
+  .audit-ver{font-family:'DM Mono',monospace;font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 5px;border-radius:4px;white-space:nowrap;height:fit-content;margin-top:1px}
+  .audit-content .au-user{font-weight:700;color:var(--text)}
+  .audit-content .au-action{color:var(--text2)}
+  .audit-content .au-time{color:var(--text4);font-size:10px;margin-top:1px}
+
+  /* ── EMPTY STATE ── */
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--text3);text-align:center}
+  .empty-state .ei{font-size:36px}
+  .empty-state h3{font-size:16px;font-weight:600;color:var(--text2)}
+  .empty-state p{font-size:13px;max-width:280px;line-height:1.6}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;box-shadow:var(--shadow-md);z-index:2000;animation:fadeUp .2s ease;font-family:'DM Sans',sans-serif}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .hidden{display:none!important}
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+  /* ── PERMALINK HIGHLIGHT ── */
+  .cell-card.approved{border-color:var(--green-border)}
+  .cell-card.approved::after{content:'✓';position:absolute;bottom:6px;right:7px;font-size:11px;font-weight:800;color:var(--green);background:var(--green-light);border:1px solid var(--green-border);border-radius:10px;padding:0px 5px;line-height:16px;pointer-events:none}
+  .cell-card.permalink-highlight{animation:plHighlight 1.5s ease}
+  @keyframes plHighlight{0%,100%{border-color:var(--border)}30%,70%{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.2)}}
+
+  /* ── BATCH IMPORT PANEL ── */
+  .batch-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+  .batch-panel{background:#ffffff;border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(0,0,0,.35);width:820px;max-width:calc(100vw - 40px);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:601}
+  .batch-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .batch-title{font-size:16px;font-weight:700;flex:1}
+  .batch-body{overflow-y:auto;padding:20px 22px;flex:1;display:flex;flex-direction:column;gap:16px}
+  .batch-step{display:flex;align-items:flex-start;gap:14px}
+  .batch-step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .batch-step-body{flex:1}
+  .batch-step-label{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+  .batch-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .batch-load-btn{padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--accent);background:#fff;color:var(--accent);transition:all .15s}
+  .batch-load-btn:hover{background:var(--accent);color:#fff}
+  .batch-loaded{font-size:12px;color:var(--green);font-weight:600}
+  .batch-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;max-height:280px;overflow-y:auto;padding:4px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+  .batch-thumb{position:relative;border-radius:6px;overflow:hidden;border:2px solid var(--border);background:var(--surface2);cursor:pointer;transition:border-color .15s}
+  .batch-thumb.excluded{opacity:.35;border-color:var(--red)}
+  .batch-thumb:hover{border-color:var(--accent)}
+  .batch-thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .batch-thumb .bt-name{font-size:8px;color:var(--text3);padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
+  .batch-thumb .bt-exclude{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .batch-excluded-hint{font-size:11px;color:var(--text3);margin-top:4px}
+  .batch-summary{padding:12px 16px;background:var(--accent-light);border:1px solid #93c5fd;border-radius:var(--radius);font-size:13px;color:var(--accent);font-weight:600}
+  .batch-footer{padding:14px 22px;border-top:1px solid var(--border);background:#fafbfc;display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .batch-commit-btn{padding:9px 20px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:none;background:var(--green);color:#fff;transition:background .15s}
+  .batch-commit-btn:hover{background:#15803d}
+  .batch-commit-btn:disabled{opacity:.4;cursor:not-allowed}
+  .zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:900;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+  .zoom-img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--radius-lg);box-shadow:0 0 60px rgba(0,0,0,.8);transition:transform .1s ease;transform-origin:center center}
+  .zoom-close{position:fixed;top:20px;right:24px;color:#fff;font-size:28px;cursor:pointer;opacity:.7;transition:opacity .15s;z-index:901;background:none;border:none;line-height:1}
+  .zoom-close:hover{opacity:1}
+  .zoom-hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.5);font-size:12px;pointer-events:none}
+
+  /* ── SELECTION MODE ── */
+  .cell-card.selectable{cursor:pointer}
+  .cell-card.sel-selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.18);transform:translateY(-1px)}
+  .cell-card.sel-selected .cell-card-img{opacity:.85}
+  .card-checkbox{position:absolute;top:7px;left:7px;width:20px;height:20px;border-radius:5px;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none;transition:all .15s}
+  .sel-selected .card-checkbox{background:var(--accent);border-color:var(--accent);color:#fff}
+  .sel-mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* ── FLOATING ACTION BAR ── */
+  .fab{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;border-radius:var(--radius-xl);padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.28);z-index:400;animation:fabIn .2s ease;white-space:nowrap}
+  .fab.hidden{display:none!important}
+  @keyframes fabIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .fab-count{font-size:13px;font-weight:700;padding-right:8px;border-right:1px solid rgba(255,255,255,.2)}
+  .fab-btn{padding:6px 13px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;transition:all .15s;font-family:'DM Sans',sans-serif}
+  .fab-btn:hover{background:rgba(255,255,255,.22)}
+  .fab-btn.fab-green{border-color:var(--green);background:var(--green)}
+  .fab-btn.fab-green:hover{background:#15803d}
+  .fab-deselect{padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:none;color:rgba(255,255,255,.55);transition:color .15s;font-family:'DM Sans',sans-serif}
+  .fab-deselect:hover{color:#fff}
+
+  /* ── BULK ACTION PANEL ── */
+  .bulk-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+  .bulk-panel{background:#ffffff;border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(0,0,0,.35);width:520px;max-width:calc(100vw - 40px);max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+  .bulk-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .bulk-title{font-size:16px;font-weight:700;flex:1}
+  .bulk-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1}
+  .bulk-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+  .bulk-desc{font-size:13px;color:var(--text2);line-height:1.5}
+  .bulk-textarea{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;resize:vertical;min-height:90px;transition:border-color .15s}
+  .bulk-textarea:focus{border-color:var(--accent)}
+  .bulk-warning{padding:10px 12px;background:var(--red-light);border:1px solid var(--red-border);border-radius:var(--radius);font-size:12px;color:var(--red);font-weight:600}
+  .bulk-conf-toggle{display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;width:fit-content}
+  .bulk-conf-btn{padding:8px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--surface);color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .bulk-conf-btn.active{background:var(--accent-light);color:var(--accent)}
+  .bulk-tag-row{display:flex;gap:8px;align-items:center}
+  .bulk-tag-input{flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s}
+  .bulk-tag-input:focus{border-color:var(--accent)}
+  .bulk-tag-mode{display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden}
+  .bulk-tag-mode button{padding:6px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--surface);color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .bulk-tag-mode button.active{background:var(--amber-light);color:var(--amber)}
+  .bulk-tag-mode button.active.add{background:var(--green-light);color:var(--green)}
+
+  /* ── DETAIL ROTATION ── */
+  .dp-rotate-btn{padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .dp-rotate-btn:hover{background:var(--surface2);color:var(--text)}
+  .dp-cell-img{transition:transform .2s ease,opacity .15s}
+
+  /* ── INLINE COMMENTARY EDIT ── */
+  .dp-commentary-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
+  .dp-commentary-textarea{width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;resize:vertical;min-height:52px;transition:border-color .15s}
+  .dp-commentary-textarea:focus{border-color:var(--accent)}
+  .dp-commentary-actions{display:flex;gap:6px;align-items:center}
+
+  .dp-nav{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);box-shadow:var(--shadow-md);transition:all .15s;z-index:10}
+  .dp-nav:hover{background:#fff;color:var(--accent)}
+  .dp-nav:disabled{opacity:.25;cursor:not-allowed}
+  .dp-nav.prev{left:-16px}
+  .dp-nav.next{right:-16px}
+
+  /* ── DETAIL IMAGE CLICKABLE ── */
+  .dp-cell-img{width:100%;border-radius:var(--radius-lg);border:2px solid var(--border);object-fit:contain;display:block;background:#f8f9fb;max-height:220px;cursor:zoom-in;transition:opacity .15s}
+  .dp-cell-img:hover{opacity:.9}
+  .dp-cell-img.poor{border-color:var(--red)}
+
+  /* ── INLINE EDIT FIELDS ── */
+  .dp-editable{display:flex;align-items:center;gap:6px;flex:1}
+  .dp-edit-input{flex:1;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s}
+  .dp-edit-input:focus{border-color:var(--accent)}
+  .dp-edit-save{padding:3px 9px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;transition:all .15s}
+  .dp-edit-save:hover{background:var(--accent-hover)}
+  .conf-toggle{display:flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;font-size:11px}
+  .conf-toggle button{padding:3px 10px;font-weight:600;border:none;cursor:pointer;background:var(--surface);color:var(--text3);transition:all .15s}
+  .conf-toggle button.active{background:var(--accent-light);color:var(--accent)}
+  /* ── APPROVAL PANEL ── */
+  .approval-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+  .approval-panel{background:#ffffff;border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(0,0,0,.35);width:580px;max-width:calc(100vw - 40px);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:601}
+  .ap-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .ap-title{font-size:16px;font-weight:700;flex:1}
+  .ap-body{overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:10px}
+  .ap-section-title{font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;margin-top:4px}
+  .ap-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);background:#fafbfc;transition:border-color .15s}
+  .ap-row:has(.ap-row-btn:not([disabled])):hover{border-color:var(--accent);background:var(--accent-light)}
+  .ap-row-label{flex:1;font-size:13px;font-weight:600;color:var(--text)}
+  .ap-row-count{font-size:11px;color:var(--text3);white-space:nowrap}
+  .ap-row-btn{padding:5px 14px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--green);background:#ffffff;color:var(--green);white-space:nowrap;transition:all .15s}
+  .ap-row-btn:hover:not([disabled]){background:var(--green);color:#fff}
+  .ap-row-btn:disabled{display:none}
+  .ap-row-done{font-size:11px;font-weight:600;color:var(--green);display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .ap-row.ap-danger{background:#fff8f8;border-color:var(--red-border)}
+  .ap-row.ap-danger:hover{border-color:var(--red);background:var(--red-light)}
+  .ap-row.ap-danger .ap-row-label{color:var(--red)}
+  .ap-danger-btn{padding:5px 14px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--red);background:#ffffff;color:var(--red);white-space:nowrap;transition:all .15s}
+  .ap-danger-btn:hover:not([disabled]){background:var(--red);color:#fff}
+  .ap-danger-btn:disabled{display:none}
+  .ap-footer{padding:14px 22px;border-top:1px solid var(--border);background:#fafbfc;display:flex;align-items:center;gap:10px}
+  .ap-footer label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+  .ap-user-row{display:flex;align-items:center;gap:10px;padding:10px 0}
+  .ap-divider{height:1px;background:var(--border);margin:4px 0}
+  .ap-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <a class="logo" href="#">
+    <div class="logo-mark">HA</div>
+    <div><div class="logo-title">Heme Atlas</div><div class="logo-sub">Curator</div></div>
+  </a>
+  <div class="header-div"></div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="global-search" placeholder="Search by tag, cell type, case, or commentary…" oninput="onSearch()" />
+  </div>
+  <div class="header-right">
+    <div class="stat-badge">🖼 <strong id="stat-total">0</strong> cells</div>
+    <div class="stat-badge">✅ <strong id="stat-approved">0</strong> approved</div>
+    <div class="stat-badge">🚩 <strong id="stat-flagged">0</strong> flagged</div>
+    <div class="stat-badge">🚫 <strong id="stat-excluded">0</strong> excluded</div>
+    <button class="btn sel-mode-btn" id="sel-mode-btn" onclick="toggleSelectionMode()">☐ Select</button>
+    <button class="btn" onclick="showBatchPanel()">⚡ Batch Import</button>
+    <button class="btn primary" onclick="showApprovalPanel()">✅ Approve</button>
+    <button class="btn green" onclick="exportCSV()">Export CSV</button>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-header">Browse</div>
+      <div class="sidebar-item active" data-view="all" onclick="setView('all')">
+        <span class="si-label">All Cells</span>
+        <span class="si-count" id="sc-all">0</span>
+      </div>
+      <div class="sidebar-item" data-view="flagged" onclick="setView('flagged')">
+        <span class="si-label">🚩 Flagged</span>
+        <span class="si-count" id="sc-flagged">0</span>
+      </div>
+      <div class="sidebar-item" data-view="corrected" onclick="setView('corrected')">
+        <span class="si-label">✏ Corrected</span>
+        <span class="si-count" id="sc-corrected">0</span>
+      </div>
+      <div class="sidebar-item" data-view="poor" onclick="setView('poor')">
+        <span class="si-label">⚠ Poor Quality</span>
+        <span class="si-count" id="sc-poor">0</span>
+      </div>
+      <div class="sidebar-item" data-view="excluded" onclick="setView('excluded')">
+        <span class="si-label">🚫 Excluded</span>
+        <span class="si-count" id="sc-excluded">0</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-header">Tags</div>
+      <div class="sidebar-item" data-view="all-tagged" onclick="setView('all-tagged')">
+        <span class="si-label">🏷 All Tagged</span>
+        <span class="si-count" id="sc-all-tagged">0</span>
+      </div>
+      <div class="sidebar-item" data-view="aberrations" onclick="setView('aberrations')">
+        <span class="si-label">⚡ Aberrations</span>
+        <span class="si-count" id="sc-aberrations">0</span>
+      </div>
+      <div id="sidebar-tags"></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-header">Cell Types</div>
+      <div id="sidebar-cells"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-area" id="main-area">
+    <div class="welcome-area" id="welcome-area">
+      <div style="font-size:52px">🩸</div>
+      <h2>Heme Atlas Curator</h2>
+      <div class="gallery-loading-spinner"></div>
+      <p id="gallery-load-hint">Loading atlas data…</p>
+    </div>
+    <div id="gallery-area" class="hidden">
+      <div class="cat-header" id="cat-header"></div>
+      <div class="filter-bar" id="filter-bar"></div>
+      <div class="cell-grid" id="cell-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay hidden" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detail-panel" style="position:relative">
+    <button class="dp-nav prev" id="dp-prev" onclick="navDetail(-1)" title="Previous cell">‹</button>
+    <button class="dp-nav next" id="dp-next" onclick="navDetail(1)" title="Next cell">›</button>
+    <div class="dp-header">
+      <div class="dp-title" id="dp-title">—</div>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="copyPermalink()" title="Copy link to this cell">🔗 Copy Link</button>
+      <button class="dp-close" onclick="closeDetailBtn()">✕</button>
+    </div>
+    <div class="dp-body">
+      <div class="dp-img-col">
+        <img class="dp-cell-img" id="dp-img" src="" alt="" onclick="openZoom(this.src)" title="Click to zoom" style="cursor:zoom-in" />
+        <div style="display:flex;gap:6px;margin-top:6px;justify-content:center">
+          <button class="dp-rotate-btn" onclick="rotateDetail(-90)" title="Rotate left">↺</button>
+          <button class="dp-rotate-btn" onclick="rotateDetail(90)" title="Rotate right">↻</button>
+          <button class="dp-rotate-btn" onclick="flipDetail()" title="Flip horizontal">⇄</button>
+          <button class="dp-rotate-btn" onclick="resetDetailRotation()" title="Reset">Reset</button>
+        </div>
+        <div id="dp-img-meta"></div>
+        <div class="dp-actions" id="dp-actions"></div>
+      </div>
+      <div class="dp-info-col" id="dp-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ZOOM LIGHTBOX -->
+<div class="zoom-overlay hidden" id="zoom-overlay" onclick="closeZoom()">
+  <button class="zoom-close" onclick="closeZoom()">✕</button>
+  <img class="zoom-img" id="zoom-img" src="" alt="" onclick="event.stopPropagation()" />
+  <div class="zoom-hint">Scroll to zoom · Click outside to close</div>
+</div>
+
+<!-- APPROVAL PANEL -->
+<div class="approval-overlay hidden" id="approval-overlay" onclick="closeApprovalIfBg(event)">
+  <div class="approval-panel">
+    <div class="ap-header">
+      <div class="ap-title">✅ Approve Identifications</div>
+      <button class="dp-close" onclick="hideApprovalPanel()">✕</button>
+    </div>
+    <div class="ap-body">
+      <div>
+        <div class="ap-section-title">Approve by Cell Type</div>
+        <div id="ap-cell-rows" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+      <div>
+        <div class="ap-section-title">Bulk Actions</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="ap-row">
+            <div style="flex:1">
+              <div class="ap-row-label">Approve all unflagged</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">Skips cells flagged for discussion</div>
+            </div>
+            <div class="ap-row-count" id="ap-count-unflagged">—</div>
+            <button class="ap-row-btn" id="ap-btn-unflagged" onclick="bulkApprove('unflagged')">Approve</button>
+            <span class="ap-row-done hidden" id="ap-done-unflagged">✓ All approved</span>
+          </div>
+          <div class="ap-row ap-danger">
+            <div style="flex:1">
+              <div class="ap-row-label">Approve everything</div>
+              <div style="font-size:11px;color:var(--red);opacity:.8;margin-top:2px">Includes flagged cells — requires confirmation</div>
+            </div>
+            <div class="ap-row-count" id="ap-count-all">—</div>
+            <button class="ap-danger-btn" id="ap-btn-all" onclick="bulkApprove('all')">Approve All</button>
+            <span class="ap-row-done hidden" id="ap-done-all">✓ All approved</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ap-footer">
+      <label>Pathologist name</label>
+      <input class="dp-input" id="ap-user" placeholder="Your name for audit trail" style="flex:1" />
+      <button class="btn" onclick="hideApprovalPanel()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH IMPORT PANEL -->
+<div class="batch-overlay hidden" id="batch-overlay" onclick="closeBatchIfBg(event)">
+  <div class="batch-panel">
+    <div class="batch-header">
+      <div class="batch-title">⚡ Batch Import</div>
+      <button class="dp-close" onclick="hideBatchPanel()">✕</button>
+    </div>
+    <div class="batch-body">
+      <div class="batch-step">
+        <div class="batch-step-num">1</div>
+        <div class="batch-step-body">
+          <div class="batch-step-label">Load image folder</div>
+          <div class="batch-controls">
+            <button class="batch-load-btn" onclick="document.getElementById('batch-folder-input').click()">📁 Select Folder</button>
+            <span class="batch-loaded hidden" id="batch-loaded-msg"></span>
+          </div>
+        </div>
+      </div>
+      <div class="batch-step">
+        <div class="batch-step-num">2</div>
+        <div class="batch-step-body">
+          <div class="batch-step-label">Assign cell type</div>
+          <div class="batch-controls">
+            <select class="dp-select" id="batch-cell-select" style="width:auto;min-width:180px" onchange="updateBatchSummary()">
+              <option value="">— Select cell type —</option>
+            </select>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;font-weight:600;color:var(--text3)">Case Tag</label>
+              <input class="dp-edit-input" id="batch-case-tag" placeholder="optional" style="width:120px" />
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <label style="font-size:12px;font-weight:600;color:var(--text3)">Tags</label>
+              <input class="dp-edit-input" id="batch-tags" placeholder="e.g. aberration, pelger-huet" style="width:240px" />
+              <span style="font-size:11px;color:var(--text3)">Add <strong>aberration</strong> to route to the Aberrations library</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;font-weight:600;color:var(--text3)">Your Name</label>
+              <input class="dp-edit-input" id="batch-user" placeholder="for audit trail" style="width:140px" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="batch-step">
+        <div class="batch-step-num">3</div>
+        <div class="batch-step-body">
+          <div class="batch-step-label">Review — click any cell to exclude it</div>
+          <div class="batch-preview-grid hidden" id="batch-preview-grid"></div>
+          <div class="batch-excluded-hint hidden" id="batch-excluded-hint"></div>
+        </div>
+      </div>
+      <div class="batch-summary hidden" id="batch-summary"></div>
+    </div>
+    <div class="batch-footer">
+      <span style="font-size:12px;color:var(--text3);flex:1" id="batch-skip-msg"></span>
+      <button class="btn" onclick="hideBatchPanel()">Cancel</button>
+      <button class="batch-commit-btn" id="batch-commit-btn" onclick="commitBatch()" disabled>⚡ Finalize All</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING ACTION BAR (selection mode) -->
+<div class="fab hidden" id="fab">
+  <span class="fab-count" id="fab-count">0 selected</span>
+  <button class="fab-btn" onclick="openBulkPanel('commentary')">✍ Commentary</button>
+  <button class="fab-btn fab-green" onclick="openBulkPanel('approve')">✅ Approve</button>
+  <button class="fab-btn" style="border-color:rgba(248,113,113,.5);color:#fca5a5" onclick="openBulkPanel('exclude')">🚫 Exclude</button>
+  <button class="fab-btn" onclick="openBulkPanel('tag')">🏷 Tag</button>
+  <button class="fab-btn" onclick="openBulkPanel('confidence')">◎ Confidence</button>
+  <button class="fab-deselect" onclick="clearSelection()">✕ Deselect all</button>
+</div>
+
+<!-- BULK COMMENTARY PANEL -->
+<div class="bulk-overlay hidden" id="bulk-commentary-overlay" onclick="closeBulkIfBg(event,'bulk-commentary-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">✍ Bulk Commentary</div>
+      <button class="dp-close" onclick="closeBulkPanel('commentary')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-commentary-desc"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:6px">Commentary text</label>
+        <textarea class="bulk-textarea" id="bulk-commentary-text" placeholder="Morphologic notes — will be applied to all selected cells…"></textarea>
+      </div>
+      <div class="bulk-warning hidden" id="bulk-commentary-warn"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name (for audit trail)</label>
+        <input class="dp-input" id="bulk-commentary-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('commentary')">Cancel</button>
+      <button class="btn primary" onclick="commitBulkCommentary()">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK APPROVE PANEL -->
+<div class="bulk-overlay hidden" id="bulk-approve-overlay" onclick="closeBulkIfBg(event,'bulk-approve-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">✅ Approve Selected</div>
+      <button class="dp-close" onclick="closeBulkPanel('approve')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-approve-desc"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name (for audit trail)</label>
+        <input class="dp-input" id="bulk-approve-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('approve')">Cancel</button>
+      <button class="btn green" onclick="commitBulkApprove()">Approve Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK TAG PANEL -->
+<div class="bulk-overlay hidden" id="bulk-tag-overlay" onclick="closeBulkIfBg(event,'bulk-tag-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">🏷 Bulk Tag</div>
+      <button class="dp-close" onclick="closeBulkPanel('tag')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-tag-desc"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:6px">Tag to add or remove</label>
+        <div class="bulk-tag-row">
+          <input class="bulk-tag-input" id="bulk-tag-input" placeholder="e.g. toxic_granulation" />
+          <div class="bulk-tag-mode">
+            <button id="btm-add" class="active add" onclick="setBulkTagMode('add')">Add</button>
+            <button id="btm-remove" onclick="setBulkTagMode('remove')">Remove</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">Tags are comma-separated. Add appends; Remove strips the exact tag if present.</div>
+      </div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name</label>
+        <input class="dp-input" id="bulk-tag-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('tag')">Cancel</button>
+      <button class="btn primary" onclick="commitBulkTag()">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK CONFIDENCE PANEL -->
+<div class="bulk-overlay hidden" id="bulk-confidence-overlay" onclick="closeBulkIfBg(event,'bulk-confidence-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">◎ Bulk Confidence</div>
+      <button class="dp-close" onclick="closeBulkPanel('confidence')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-confidence-desc"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:8px">Set confidence rating</label>
+        <div class="bulk-conf-toggle">
+          <button id="bcc-classic" class="bulk-conf-btn active" onclick="setBulkConf('classic')">Classic</button>
+          <button id="bcc-borderline" class="bulk-conf-btn" onclick="setBulkConf('borderline')">Borderline</button>
+        </div>
+      </div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name</label>
+        <input class="dp-input" id="bulk-conf-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('confidence')">Cancel</button>
+      <button class="btn primary" onclick="commitBulkConfidence()">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK EXCLUDE PANEL -->
+<div class="bulk-overlay hidden" id="bulk-exclude-overlay" onclick="closeBulkIfBg(event,'bulk-exclude-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">🚫 Bulk Exclude</div>
+      <button class="dp-close" onclick="closeBulkPanel('exclude')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-exclude-desc"></div>
+      <div class="bulk-warning">Excluded cells are removed from the student atlas. This can be undone cell-by-cell via the detail panel.</div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name</label>
+        <input class="dp-input" id="bulk-exclude-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('exclude')">Cancel</button>
+      <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="commitBulkExclude()">Exclude Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- HIDDEN INPUTS -->
+<input type="file" id="batch-folder-input" webkitdirectory multiple accept="image/*" style="display:none" onchange="handleBatchFolder(event)" />
+<div id="toasts"></div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────
+// Maturation order — code constant, not stored in CSV
+const MATURATION = {
+  // Granulocytes — normal → immature → blast
+  'NEUTROPHIL':1,'BAND':2,'METAMYELOCYTE':3,'MYELOCYTE':4,'PROMYELOCYTE':5,'BLAST':6,
+  // Lymphoid
+  'LYMPHOCYTE':7,'REACTIVE LYMP':8,'OTHER LYMP':9,'PLASMA':10,
+  // Monocytic
+  'MONOCYTE':11,
+  // Eosinophil / Basophil
+  'EOSINOPHIL':12,'BASOPHIL':13,
+  // Other
+  'NRBC':14,'OTHER':15
+};
+const CELL_DISPLAY = {
+  'BLAST':'Blast','PROMYELOCYTE':'Promyelocyte','MYELOCYTE':'Myelocyte',
+  'METAMYELOCYTE':'Metamyelocyte','BAND':'Band','NEUTROPHIL':'Seg Neutrophil',
+  'LYMPHOCYTE':'Lymphocyte','REACTIVE LYMP':'Reactive Lymph','OTHER LYMP':'Other Lymph',
+  'MONOCYTE':'Monocyte','EOSINOPHIL':'Eosinophil','BASOPHIL':'Basophil',
+  'PLASMA':'Plasma Cell','NRBC':'NRBC','OTHER':'Other'
+};
+const CORRECTION_REASONS = ['misidentification','poor quality excluded','reclassification','teaching case','other'];
+const CSV_FIELDS = [
+  'image_id','filename','case_tag','uploaded_by','upload_date',
+  'tech_label','tech_id','tech_date','tech_status','image_quality','tech_confidence',
+  'path_label','path_id','path_date','path_status','path_confidence','path_commentary',
+  'tech_note','tags','version','last_modified_by','last_modified_date','audit_trail_json',
+  'discussion_flag','discussion_comment','discussion_flagged_by','discussion_date',
+  'correction_label','correction_reason','correction_note','correction_by','correction_date',
+  'path_review_method'
+];
+
+// ── STATE ──────────────────────────────────────────────
+let G = {
+  records:{},  // filename → record
+  currentView:'all',
+  currentFilter:'all',
+  searchQuery:'',
+  detailId:null,
+  userName:'',
+  selectionMode:false,
+  selected:new Set(), // filenames
+  _detailRotation:0,  // degrees
+  _detailFlipped:false,
+  _bulkTagMode:'add',
+  _bulkConfVal:'classic',
+};
+
+// ── IMAGE URL ─────────────────────────────────────────
+// Images are served as static files from ./images/.
+// Batch-imported images use blob URLs until pushed to the repo.
+const IMAGE_BASE = './images/';
+const _batchUrlCache = {};
+function getImageUrl(filename){
+  if(_batchUrlCache[filename]) return _batchUrlCache[filename];
+  if(!filename) return '';
+  return IMAGE_BASE + encodeURIComponent(filename);
+}
+
+// ── LOAD ───────────────────────────────────────────────
+const CSV_URL = './data/atlas.csv';
+
+async function loadGallery(){
+  const hintEl = document.getElementById('gallery-load-hint');
+  try {
+    const resp = await fetch(CSV_URL);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const lines = text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){ hintEl.textContent='CSV appears empty.'; return; }
+    const hdrs = parseRow(lines[0]);
+    let n=0;
+    for(let i=1;i<lines.length;i++){
+      const vals=parseRow(lines[i]);if(vals.length<2)continue;
+      const rec={};hdrs.forEach((h,j)=>rec[h]=vals[j]||'');
+      if(!rec.filename)continue;
+      try{rec.audit_trail=JSON.parse(rec.audit_trail_json||'[]');}catch{rec.audit_trail=[];}
+      delete rec.audit_trail_json;
+      rec.version=parseInt(rec.version)||0;
+      if(!rec.discussion_flag)rec.discussion_flag='false';
+      if(!rec.path_review_method)rec.path_review_method='';
+      G.records[rec.filename]=rec;n++;
+    }
+    if(!n){ hintEl.textContent='No records found in CSV.'; return; }
+    hintEl.textContent=n + ' records loaded — launching\u2026';
+    setTimeout(()=>{
+      document.getElementById('welcome-area').classList.add('hidden');
+      document.getElementById('gallery-area').classList.remove('hidden');
+      refreshAll();
+      checkPermalink();
+    }, 300);
+  } catch(err) {
+    hintEl.textContent='Failed to load atlas data: ' + err.message;
+    console.error('Gallery load error:', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadGallery);
+
+// ── EFFECTIVE LABEL ────────────────────────────────────
+function effectiveLabel(rec){
+  // correction_label overrides everything if set
+  if(rec.correction_label) return rec.correction_label;
+  return rec.path_label||rec.tech_label||'';
+}
+
+// ── REFRESH ────────────────────────────────────────────
+function refreshAll(){
+  updateSidebarCounts();
+  renderSidebarCells();
+  renderSidebarTags();
+  renderGallery();
+  updateHeaderStats();
+}
+
+function updateHeaderStats(){
+  const recs=Object.values(G.records);
+  document.getElementById('stat-total').textContent=recs.length;
+  document.getElementById('stat-approved').textContent=recs.filter(r=>r.path_status==='finalized').length;
+  document.getElementById('stat-flagged').textContent=recs.filter(r=>r.discussion_flag==='true').length;
+}
+
+function updateSidebarCounts(){
+  const recs=Object.values(G.records);
+  document.getElementById('sc-all').textContent=recs.length;
+  document.getElementById('sc-flagged').textContent=recs.filter(r=>r.discussion_flag==='true').length;
+  document.getElementById('sc-corrected').textContent=recs.filter(r=>r.correction_label).length;
+  document.getElementById('sc-poor').textContent=recs.filter(r=>r.image_quality==='poor').length;
+  const excl=recs.filter(r=>r.path_status==='excluded').length;
+  document.getElementById('sc-excluded').textContent=excl;
+  const exclEl=document.getElementById('stat-excluded');if(exclEl)exclEl.textContent=excl;
+  const abEl=document.getElementById('sc-aberrations');
+  if(abEl)abEl.textContent=recs.filter(r=>isAberration(r)).length;
+  const taggedEl=document.getElementById('sc-all-tagged');
+  if(taggedEl)taggedEl.textContent=recs.filter(r=>r.tags&&r.tags.trim()).length;
+}
+
+function isAberration(rec){
+  if(!rec||!rec.tags)return false;
+  return rec.tags.split(',').map(t=>t.trim().toLowerCase()).includes('aberration');
+}
+
+function renderSidebarTags(){
+  const el=document.getElementById('sidebar-tags');el.innerHTML='';
+  const tagCounts={};
+  Object.values(G.records).forEach(r=>{
+    if(!r.tags||!r.tags.trim())return;
+    r.tags.split(',').forEach(t=>{
+      t=t.trim().toLowerCase();
+      if(t&&t!=='aberration') tagCounts[t]=(tagCounts[t]||0)+1;
+    });
+  });
+  Object.keys(tagCounts).sort().forEach(tag=>{
+    const d=document.createElement('div');
+    d.className='sidebar-item'+(G.currentView==='abtag:'+tag?' active':'');
+    d.dataset.view='abtag:'+tag;
+    d.onclick=()=>setView('abtag:'+tag);
+    d.innerHTML=`<span class="si-label" style="font-size:11px">${esc(tag)}</span><span class="si-count">${tagCounts[tag]}</span>`;
+    el.appendChild(d);
+  });
+}
+
+function renderSidebarCells(){
+  const el=document.getElementById('sidebar-cells');el.innerHTML='';
+  // Count by effective label, sorted by maturation order
+  const counts={};
+  const flagCounts={};
+  Object.values(G.records).forEach(r=>{
+    if(isAberration(r))return; // aberrations live in their own section
+    const lbl=effectiveLabel(r);if(!lbl)return;
+    counts[lbl]=(counts[lbl]||0)+1;
+    if(r.discussion_flag==='true')flagCounts[lbl]=(flagCounts[lbl]||0)+1;
+  });
+  const sorted=Object.keys(counts).sort((a,b)=>(MATURATION[a]||99)-(MATURATION[b]||99));
+  sorted.forEach(lbl=>{
+    const d=document.createElement('div');
+    d.className='sidebar-item'+(G.currentView===lbl?' active':'');
+    d.dataset.view=lbl;
+    d.onclick=()=>setView(lbl);
+    const flagHtml=flagCounts[lbl]?`<span class="flag-badge">🚩${flagCounts[lbl]}</span>`:'';
+    d.innerHTML=`<span class="si-label">${esc(CELL_DISPLAY[lbl]||lbl)}</span>${flagHtml}<span class="si-count">${counts[lbl]}</span>`;
+    el.appendChild(d);
+  });
+}
+
+// ── VIEW & FILTER ──────────────────────────────────────
+function setView(view){
+  G.currentView=view;G.currentFilter='all';G.searchQuery='';
+  document.getElementById('global-search').value='';
+  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.toggle('active',i.dataset.view===view));
+  renderGallery();
+}
+
+function onSearch(){
+  G.searchQuery=document.getElementById('global-search').value.toLowerCase();
+  renderGallery();
+}
+
+// ── FILTER RECORDS ─────────────────────────────────────
+function filteredRecords(){
+  let recs=Object.values(G.records);
+  // View filter
+  if(G.currentView==='all'){recs=recs.filter(r=>!isAberration(r));}
+  else if(G.currentView==='flagged'){recs=recs.filter(r=>r.discussion_flag==='true'&&!isAberration(r));}
+  else if(G.currentView==='corrected'){recs=recs.filter(r=>r.correction_label&&!isAberration(r));}
+  else if(G.currentView==='poor'){recs=recs.filter(r=>r.image_quality==='poor'&&!isAberration(r));}
+  else if(G.currentView==='excluded'){recs=recs.filter(r=>r.path_status==='excluded'&&!isAberration(r));}
+  else if(G.currentView==='aberrations'){recs=recs.filter(r=>isAberration(r));}
+  else if(G.currentView==='all-tagged'){recs=recs.filter(r=>r.tags&&r.tags.trim());}
+  else if(G.currentView.startsWith('abtag:')){
+    const tag=G.currentView.slice(6);
+    recs=recs.filter(r=>(r.tags||'').split(',').map(t=>t.trim().toLowerCase()).includes(tag));
+  }
+  else recs=recs.filter(r=>effectiveLabel(r)===G.currentView&&!isAberration(r));
+  // Sub-filter
+  if(G.currentFilter==='approved')recs=recs.filter(r=>r.path_status==='finalized');
+  else if(G.currentFilter==='unapproved')recs=recs.filter(r=>r.path_status!=='finalized');
+  else if(G.currentFilter==='borderline')recs=recs.filter(r=>r.tech_confidence==='borderline'||r.path_confidence==='borderline');
+  else if(G.currentFilter==='flagged')recs=recs.filter(r=>r.discussion_flag==='true');
+  // Search
+  if(G.searchQuery){
+    recs=recs.filter(r=>{
+      const q=G.searchQuery;
+      return effectiveLabel(r).toLowerCase().includes(q)||
+        (r.tags||'').toLowerCase().includes(q)||
+        (r.case_tag||'').toLowerCase().includes(q)||
+        (r.path_commentary||'').toLowerCase().includes(q)||
+        (r.filename||'').toLowerCase().includes(q)||
+        (r.discussion_comment||'').toLowerCase().includes(q)||
+        (r.correction_note||'').toLowerCase().includes(q);
+    });
+  }
+  return recs;
+}
+
+// ── RENDER GALLERY ─────────────────────────────────────
+function renderGallery(){
+  const recs=filteredRecords();
+  document.getElementById('welcome-area').classList.add('hidden');
+  document.getElementById('gallery-area').classList.remove('hidden');
+  renderCatHeader(recs);
+  renderFilterBar();
+  renderGrid(recs);
+}
+
+function renderCatHeader(recs){
+  const el=document.getElementById('cat-header');
+  const view=G.currentView;
+  const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','poor':'Poor Quality Images','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
+  if(G.currentView.startsWith('abtag:'))viewNames[G.currentView]=G.currentView.slice(6).replace(/\b\w/g,c=>c.toUpperCase());
+  const title=viewNames[view]||(CELL_DISPLAY[view]||view);
+  const total=recs.length;
+  const flagged=recs.filter(r=>r.discussion_flag==='true').length;
+  const corrected=recs.filter(r=>r.correction_label).length;
+  const prelim=recs.filter(r=>{const lbl=effectiveLabel(r);return r.path_status!=='finalized'&&(r.tech_status==='preliminary'||r.path_status==='preliminary');}).length;
+  el.innerHTML=`
+    <div class="cat-title-row">
+      <div class="cat-title">${esc(title)}</div>
+    </div>
+    <div class="cat-pills">
+      <span class="cat-pill total">${total} cells</span>
+      ${prelim?`<span class="cat-pill prelim">⏳ ${prelim} preliminary</span>`:''}
+      ${flagged?`<span class="cat-pill flagged">🚩 ${flagged} flagged</span>`:''}
+      ${corrected?`<span class="cat-pill corrected">✏ ${corrected} corrected</span>`:''}
+    </div>`;
+}
+
+function renderFilterBar(){
+  const el=document.getElementById('filter-bar');el.innerHTML='';
+  const filters=[
+    {id:'all',label:'All'},
+    {id:'approved',label:'✅ Approved'},
+    {id:'unapproved',label:'⏳ Pending Approval'},
+    {id:'borderline',label:'Borderline'},
+    {id:'flagged',label:'🚩 Flagged'},
+  ];
+  filters.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='filter-btn'+(G.currentFilter===f.id?' active':'');
+    b.textContent=f.label;
+    b.onclick=()=>{G.currentFilter=f.id;renderGallery();};
+    el.appendChild(b);
+  });
+}
+
+// ── CHUNKED GRID RENDERING ────────────────────────────
+const GRID_CHUNK_SIZE = 60;
+let _gGridObserver = null;
+let _gGridRecs = [];
+let _gGridCursor = 0;
+
+function renderGrid(recs){
+  const grid=document.getElementById('cell-grid');grid.innerHTML='';
+  if(_gGridObserver){_gGridObserver.disconnect();_gGridObserver=null;}
+  if(!recs.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ei">🔬</div><h3>No cells found</h3><p>Try adjusting your filters or search query.</p></div>`;
+    return;
+  }
+  _gGridRecs=recs;
+  _gGridCursor=0;
+  _gAppendChunk(grid);
+  _gSetupObserver(grid);
+}
+
+function _gMakeCard(rec){
+  const lbl=effectiveLabel(rec);
+  const displayLbl=CELL_DISPLAY[lbl]||lbl||'Unlabeled';
+  const isFlagged=rec.discussion_flag==='true';
+  const isCorrected=!!rec.correction_label;
+  const isPoor=rec.image_quality==='poor';
+  const isBorderline=rec.tech_confidence==='borderline'||rec.path_confidence==='borderline';
+  const isApproved=rec.path_status==='finalized';
+  const isExcluded=rec.path_status==='excluded';
+  const isSelected=G.selectionMode&&G.selected.has(rec.filename);
+
+  const isAb=isAberration(rec);
+  const card=document.createElement('div');
+  card.className='cell-card'+(isFlagged?' flagged':'')+(isCorrected?' corrected':'')+(isPoor?' poor':'')+(isApproved?' approved':'')+(isExcluded?' excluded':'')+(isSelected?' sel-selected':'')+(isAb?' aberration-card':'');
+  card.id='card-'+rec.image_id;
+
+  if(G.selectionMode){
+    card.onclick=()=>toggleCardSelection(rec.filename);
+  } else {
+    card.onclick=()=>openDetail(rec.filename);
+  }
+
+  const imgSrc=getImageUrl(rec.filename);
+  const flagDot=isFlagged?'<div class="card-flag-dot discussion"></div>':isCorrected?'<div class="card-flag-dot correction"></div>':'';
+  const checkbox=G.selectionMode?`<div class="card-checkbox">${isSelected?'✓':''}</div>`:'';
+
+  card.innerHTML=`
+    ${flagDot}${checkbox}
+    <img class="cell-card-img" src="${imgSrc}" loading="lazy" alt="${esc(rec.filename)}" onerror="this.style.background='var(--surface2)'" />
+    <div class="cell-card-body">
+      <div class="cell-card-label">${isAb
+        ? esc(rec.tags.split(',').filter(t=>t.trim().toLowerCase()!=='aberration').map(t=>t.trim()).join(', ')||displayLbl)
+        : esc(displayLbl)}</div>
+      ${isAb?`<div style="font-size:10px;color:var(--text3);margin-top:1px">${esc(CELL_DISPLAY[lbl]||lbl||'—')}</div>`:''}
+      <div class="cell-card-meta">
+        ${isExcluded?'<span class="cc-pill excl">🚫 Excluded</span>':isApproved?'<span class="cc-pill fin">✅ Approved</span>':'<span class="cc-pill pre">Pending</span>'}
+        ${isBorderline?'<span class="cc-pill border">Borderline</span>':''}
+        ${isPoor?'<span class="cc-pill poor">Poor</span>':''}
+        ${isCorrected?'<span class="cc-pill corr">Corrected</span>':''}
+      </div>
+    </div>`;
+  return card;
+}
+
+function _gAppendChunk(grid){
+  const end=Math.min(_gGridCursor+GRID_CHUNK_SIZE, _gGridRecs.length);
+  const frag=document.createDocumentFragment();
+  for(let i=_gGridCursor;i<end;i++){
+    frag.appendChild(_gMakeCard(_gGridRecs[i]));
+  }
+  const oldSentinel=grid.querySelector('.grid-sentinel');
+  if(oldSentinel) oldSentinel.remove();
+  grid.appendChild(frag);
+  _gGridCursor=end;
+  if(_gGridCursor<_gGridRecs.length){
+    const sentinel=document.createElement('div');
+    sentinel.className='grid-sentinel';
+    sentinel.style.cssText='grid-column:1/-1;height:1px';
+    grid.appendChild(sentinel);
+  }
+}
+
+function _gSetupObserver(grid){
+  const scrollParent=document.getElementById('main-area');
+  _gGridObserver=new IntersectionObserver((entries)=>{
+    for(const entry of entries){
+      if(entry.isIntersecting && _gGridCursor<_gGridRecs.length){
+        _gAppendChunk(grid);
+        const newSentinel=grid.querySelector('.grid-sentinel');
+        if(newSentinel) _gGridObserver.observe(newSentinel);
+      }
+    }
+  },{root:scrollParent, rootMargin:'400px'});
+  const sentinel=grid.querySelector('.grid-sentinel');
+  if(sentinel) _gGridObserver.observe(sentinel);
+}
+
+// ── DETAIL PANEL ───────────────────────────────────────
+function openDetail(filename){
+  const rec=G.records[filename];if(!rec)return;
+  G.detailId=filename;
+
+  // Update URL hash (permalink)
+  history.replaceState(null,'','#'+rec.image_id);
+
+  const lbl=effectiveLabel(rec);
+  const displayLbl=CELL_DISPLAY[lbl]||lbl||'Unlabeled';
+  document.getElementById('dp-title').textContent=displayLbl+' — '+rec.filename;
+
+  // Reset rotation
+  G._detailRotation=0; G._detailFlipped=false;
+  const dpImg=document.getElementById('dp-img');
+  dpImg.src=getImageUrl(filename);
+  dpImg.style.transform='';
+  dpImg.className='dp-cell-img'+(rec.image_quality==='poor'?' poor':'');
+
+  // Image meta pills
+  const imgMeta=document.getElementById('dp-img-meta');
+  const pills=[];
+  if(rec.image_quality==='poor')pills.push(`<span class="cc-pill poor">⚠ Poor Quality</span>`);
+  if(rec.tech_confidence==='borderline'||rec.path_confidence==='borderline')pills.push(`<span class="cc-pill border">Borderline</span>`);
+  if(rec.discussion_flag==='true')pills.push(`<span class="cc-pill poor">🚩 Flagged</span>`);
+  if(rec.correction_label)pills.push(`<span class="cc-pill corr">✏ Corrected</span>`);
+  imgMeta.innerHTML=`<div class="dp-pills" style="margin-top:8px">${pills.join('')}</div>`;
+
+  // Actions
+  renderDetailActions(rec);
+
+  // Info column
+  renderDetailInfo(rec);
+
+  document.getElementById('detail-overlay').classList.remove('hidden');
+  // Set nav arrow state
+  const recs=filteredRecords();
+  const idx=recs.findIndex(r=>r.filename===filename);
+  updateNavArrows(idx,recs.length);
+}
+
+function renderDetailActions(rec){
+  const el=document.getElementById('dp-actions');el.innerHTML='';
+  const isApproved=rec.path_status==='finalized';
+  const isExcluded=rec.path_status==='excluded';
+
+  if(isExcluded){
+    // Rescue — pathologist overrides tech exclusion
+    const br=document.createElement('button');br.className='btn';
+    br.style.cssText='background:var(--green);color:#fff;border-color:var(--green)';
+    br.textContent='✅ Rescue & Approve';
+    br.onmouseover=()=>{br.style.background='#15803d';br.style.borderColor='#15803d';};
+    br.onmouseout=()=>{br.style.background='var(--green)';br.style.borderColor='var(--green)';};
+    br.onclick=()=>rescueCell(rec.filename);el.appendChild(br);
+    // Still allow re-excluding (no-op but keeps UI consistent)
+    const bx=document.createElement('button');bx.className='btn';
+    bx.style.cssText='color:var(--text3)';bx.textContent='🚫 Excluded';bx.disabled=true;
+    el.appendChild(bx);
+  } else if(isApproved){
+    const b=document.createElement('button');b.className='btn';b.textContent='↩ Revoke Approval';
+    b.onclick=()=>revokeApproval(rec.filename);el.appendChild(b);
+    // Exclude even approved cells — path has final say
+    const bx=document.createElement('button');bx.className='btn';
+    bx.style.cssText='color:var(--red);border-color:var(--red)';
+    bx.textContent='🚫 Exclude';
+    bx.onclick=()=>excludeCell(rec.filename);el.appendChild(bx);
+  } else {
+    const b=document.createElement('button');b.className='btn';
+    b.style.cssText='background:var(--green);color:#fff;border-color:var(--green)';
+    b.textContent='✅ Approve';
+    b.onmouseover=()=>{b.style.background='#15803d';b.style.borderColor='#15803d';};
+    b.onmouseout=()=>{b.style.background='var(--green)';b.style.borderColor='var(--green)';};
+    b.onclick=()=>approveIndividual(rec.filename);el.appendChild(b);
+    // Exclude pending cells too
+    const bx=document.createElement('button');bx.className='btn';
+    bx.style.cssText='color:var(--red);border-color:var(--red)';
+    bx.textContent='🚫 Exclude';
+    bx.onclick=()=>excludeCell(rec.filename);el.appendChild(bx);
+  }
+
+  // Flag/unflag (only for non-excluded)
+  if(!isExcluded){
+    if(rec.discussion_flag==='true'){
+      const b=document.createElement('button');b.className='btn';b.textContent='🚩 Remove Flag';
+      b.onclick=()=>unflagCell(rec.filename);el.appendChild(b);
+    } else {
+      const b=document.createElement('button');b.className='btn';b.textContent='🚩 Flag';
+      b.onclick=()=>showFlagForm(rec.filename);el.appendChild(b);
+    }
+    // Correct identity
+    const b2=document.createElement('button');b2.className='btn';b2.textContent='✏ Correct Identity';
+    b2.onclick=()=>showCorrectionForm(rec.filename);el.appendChild(b2);
+  }
+}
+
+function renderDetailInfo(rec){
+  const el=document.getElementById('dp-info');el.innerHTML='';
+  const lbl=effectiveLabel(rec);
+  const displayLbl=CELL_DISPLAY[lbl]||lbl||'—';
+  const isApproved=rec.path_status==='finalized';
+
+  // Approval / exclusion status banner
+  const isExcluded=rec.path_status==='excluded';
+  if(isExcluded){
+    el.innerHTML+=`<div class="dp-section" style="background:var(--red-light);border-color:var(--red-border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">🚫</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--red)">Excluded from atlas</div>
+          <div style="font-size:11px;color:var(--red);opacity:.8">${rec.path_id?'by '+esc(rec.path_id):''} ${rec.path_date?rec.path_date.slice(0,10):''}</div>
+        </div>
+      </div>
+    </div>`;
+  } else if(isApproved){
+    const method=rec.path_review_method==='individual'?'Individual review':'Bulk approval';
+    el.innerHTML+=`<div class="dp-section" style="background:var(--green-light);border-color:var(--green-border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">✅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--green)">Approved by ${esc(rec.path_id||'—')}</div>
+          <div style="font-size:11px;color:var(--green);opacity:.8">${rec.path_date?rec.path_date.slice(0,10):'—'}</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    el.innerHTML+=`<div class="dp-section" style="background:var(--surface2);border-color:var(--border)">
+      <div style="font-size:12px;color:var(--text3)">⏳ Pending pathologist approval</div>
+    </div>`;
+  }
+
+  // Identity section
+  let identHtml=`<div><div class="dp-section-title">Identity</div>`;
+  identHtml+=dpField('Effective Label',`<strong>${esc(displayLbl)}</strong>`);
+  if(rec.tech_label)identHtml+=dpField('Tech Label',esc(CELL_DISPLAY[rec.tech_label]||rec.tech_label)+' <span style="font-size:10px;color:var(--text3)">('+esc(rec.tech_confidence||'—')+')</span>');
+  if(rec.path_label)identHtml+=dpField('Path Label',esc(CELL_DISPLAY[rec.path_label]||rec.path_label)+' <span style="font-size:10px;color:var(--text3)">('+esc(rec.path_confidence||'—')+')</span>');
+  if(rec.correction_label)identHtml+=dpField('Corrected To',`<span style="color:var(--purple);font-weight:600">${esc(CELL_DISPLAY[rec.correction_label]||rec.correction_label)}</span>`);
+  identHtml+=dpField('Quality',rec.image_quality==='poor'?'<span style="color:var(--red)">⚠ Poor</span>':'<span style="color:var(--green)">✓ Acceptable</span>');
+  if(rec.path_commentary!==undefined){
+    const commentaryVal=esc(rec.path_commentary||'');
+    identHtml+=`<div class="dp-field-row">
+      <span class="dp-field-label">Commentary</span>
+      <div class="dp-commentary-wrap">
+        <textarea class="dp-commentary-textarea" id="detail-commentary-input" placeholder="Morphologic notes…">${commentaryVal}</textarea>
+        <div class="dp-commentary-actions">
+          <button class="dp-edit-save" onclick="saveDetailCommentary('${esc(rec.filename)}')">Save</button>
+          <span style="font-size:10px;color:var(--text4)">Shown to students in atlas</span>
+        </div>
+      </div>
+    </div>`;
+  }
+  identHtml+=`</div>`;
+  el.innerHTML+=identHtml;
+
+  // Metadata
+  let metaHtml=`<div><div class="dp-section-title">Metadata</div>`;
+  if(rec.case_tag)metaHtml+=dpField('Case Tag',esc(rec.case_tag));
+  // Inline tag editor
+  const tagVal=esc(rec.tags||'');
+  metaHtml+=`<div class="dp-field-row">
+    <span class="dp-field-label">Tags</span>
+    <div class="dp-editable">
+      <input class="dp-edit-input" id="detail-tag-input" value="${tagVal}" placeholder="e.g. Auer rod, bilobed" />
+      <button class="dp-edit-save" onclick="saveDetailTags('${esc(rec.filename)}')">Save</button>
+    </div>
+  </div>`;
+  // Confidence toggle
+  const conf=rec.tech_confidence||'classic';
+  metaHtml+=`<div class="dp-field-row">
+    <span class="dp-field-label">Confidence</span>
+    <div class="conf-toggle">
+      <button data-val="classic" class="${conf==='classic'?'active':''}" onclick="setDetailConfidence('${esc(rec.filename)}','classic')">Classic</button>
+      <button data-val="borderline" class="${conf==='borderline'?'active':''}" onclick="setDetailConfidence('${esc(rec.filename)}','borderline')">Borderline</button>
+    </div>
+  </div>`;
+  metaHtml+=dpField('Filename',`<span style="font-family:'DM Mono',monospace;font-size:11px">${esc(rec.filename)}</span>`);
+  metaHtml+=dpField('Version',`v${rec.version}`);
+  metaHtml+=`</div>`;
+  el.innerHTML+=metaHtml;
+
+  // Discussion flag
+  if(rec.discussion_flag==='true'){
+    el.innerHTML+=`<div class="dp-section flagged-section">
+      <div class="dp-section-title">🚩 Flagged for Discussion</div>
+      ${dpField('Comment',esc(rec.discussion_comment||'—'))}
+      ${dpField('Flagged By',esc(rec.discussion_flagged_by||'—'))}
+      ${dpField('Date',rec.discussion_date?rec.discussion_date.slice(0,10):'—')}
+    </div>`;
+  }
+
+  // Correction
+  if(rec.correction_label){
+    el.innerHTML+=`<div class="dp-section corrected-section">
+      <div class="dp-section-title">✏ Identity Correction</div>
+      ${dpField('Corrected To',`<strong>${esc(CELL_DISPLAY[rec.correction_label]||rec.correction_label)}</strong>`)}
+      ${dpField('Reason',esc(rec.correction_reason||'—'))}
+      ${dpField('Note',esc(rec.correction_note||'—'))}
+      ${dpField('By',esc(rec.correction_by||'—'))}
+      ${dpField('Date',rec.correction_date?rec.correction_date.slice(0,10):'—')}
+    </div>`;
+  }
+
+  // Audit trail — always shown, prominent
+  const trail=rec.audit_trail||[];
+  let auditHtml=`<div><div class="dp-section-title">Audit Trail (${trail.length} ${trail.length===1?'entry':'entries'})</div>`;
+  if(!trail.length){
+    auditHtml+=`<div style="font-size:12px;color:var(--text4);padding:6px 0">No audit entries yet.</div>`;
+  } else {
+    [...trail].reverse().forEach(ae=>{
+      auditHtml+=`<div class="audit-item">
+        <span class="audit-ver">v${ae.version||0}</span>
+        <div class="audit-content">
+          <div><span class="au-user">${esc(ae.user||'?')}</span> <span class="au-action">${esc(ae.action||'')}</span></div>
+          <div class="au-time">${ae.timestamp?ae.timestamp.slice(0,16).replace('T',' '):'—'}${ae.role?' · '+esc(ae.role):''}</div>
+        </div>
+      </div>`;
+    });
+  }
+  auditHtml+=`</div>`;
+  el.innerHTML+=auditHtml;
+}
+
+function dpField(label,valHtml){
+  return `<div class="dp-field-row"><span class="dp-field-label">${label}</span><span class="dp-field-val">${valHtml}</span></div>`;
+}
+
+// ── FLAG FORM ──────────────────────────────────────────
+function showFlagForm(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const info=document.getElementById('dp-info');
+  // Remove any existing inline form
+  const existing=info.querySelector('.inline-form');if(existing)existing.remove();
+  const form=document.createElement('div');form.className='inline-form';
+  form.innerHTML=`
+    <h4>🚩 Flag for Discussion</h4>
+    <div class="dp-form-group">
+      <label class="dp-label">Your Name</label>
+      <input class="dp-input" id="flag-user" value="${esc(G.userName)}" placeholder="Your name" />
+    </div>
+    <div class="dp-form-group">
+      <label class="dp-label">Comment</label>
+      <input class="dp-input" id="flag-comment" placeholder="Why are you flagging this cell?" />
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" onclick="submitFlag('${filename}')">Submit Flag</button>
+      <button class="btn" onclick="this.closest('.inline-form').remove()">Cancel</button>
+    </div>`;
+  info.prepend(form);form.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function submitFlag(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=document.getElementById('flag-user').value.trim();
+  const comment=document.getElementById('flag-comment').value.trim();
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+  rec.discussion_flag='true';
+  rec.discussion_comment=comment;
+  rec.discussion_flagged_by=user;
+  rec.discussion_date=now();
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:`Flagged for discussion: "${comment}"`,timestamp:now(),version:rec.version});
+  toast('🚩 Cell flagged for discussion');
+  refreshAll();openDetail(filename);
+}
+
+function unflagCell(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name:','')||'unknown';
+  rec.discussion_flag='false';rec.discussion_comment='';rec.discussion_flagged_by='';rec.discussion_date='';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:'Removed discussion flag',timestamp:now(),version:rec.version});
+  toast('✅ Flag removed');
+  refreshAll();openDetail(filename);
+}
+
+// ── CORRECTION FORM ────────────────────────────────────
+function showCorrectionForm(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const info=document.getElementById('dp-info');
+  const existing=info.querySelector('.inline-form');if(existing)existing.remove();
+  const cellOptions=Object.keys(CELL_DISPLAY).map(k=>`<option value="${k}"${rec.correction_label===k?' selected':''}>${CELL_DISPLAY[k]}</option>`).join('');
+  const reasonOptions=CORRECTION_REASONS.map(r=>`<option value="${r}"${rec.correction_reason===r?' selected':''}>${r}</option>`).join('');
+  const form=document.createElement('div');form.className='inline-form';
+  form.innerHTML=`
+    <h4>✏ Correct Cell Identity</h4>
+    <div class="dp-form-group">
+      <label class="dp-label">Your Name</label>
+      <input class="dp-input" id="corr-user" value="${esc(G.userName)}" placeholder="Your name" />
+    </div>
+    <div class="dp-form-group">
+      <label class="dp-label">Corrected Identity</label>
+      <select class="dp-select" id="corr-label"><option value="">— Select —</option>${cellOptions}</select>
+    </div>
+    <div class="dp-form-group">
+      <label class="dp-label">Reason</label>
+      <select class="dp-select" id="corr-reason"><option value="">— Select —</option>${reasonOptions}</select>
+    </div>
+    <div class="dp-form-group">
+      <label class="dp-label">Note (optional)</label>
+      <input class="dp-input" id="corr-note" value="${esc(rec.correction_note||'')}" placeholder="Additional notes…" />
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" onclick="submitCorrection('${filename}')">Save Correction</button>
+      ${rec.correction_label?`<button class="btn" onclick="clearCorrection('${filename}')">Clear Correction</button>`:''}
+      <button class="btn" onclick="this.closest('.inline-form').remove()">Cancel</button>
+    </div>`;
+  info.prepend(form);form.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function submitCorrection(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=document.getElementById('corr-user').value.trim();
+  const label=document.getElementById('corr-label').value;
+  const reason=document.getElementById('corr-reason').value;
+  const note=document.getElementById('corr-note').value.trim();
+  if(!user){toast('⚠ Please enter your name.');return;}
+  if(!label){toast('⚠ Please select a corrected identity.');return;}
+  if(!reason){toast('⚠ Please select a reason.');return;}
+  G.userName=user;
+  const prevLabel=effectiveLabel(rec);
+  rec.correction_label=label;rec.correction_reason=reason;rec.correction_note=note;
+  rec.correction_by=user;rec.correction_date=now();
+  // Carry over existing confidence if not already set
+  if(!rec.path_confidence)rec.path_confidence=rec.tech_confidence||'classic';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:`Corrected identity: ${prevLabel} → ${label} (${reason})`,timestamp:now(),version:rec.version});
+  toast(`✏ Corrected to ${CELL_DISPLAY[label]||label}`);
+  refreshAll();openDetail(filename);
+}
+
+function clearCorrection(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||'unknown';
+  const prev=rec.correction_label;
+  rec.correction_label='';rec.correction_reason='';rec.correction_note='';rec.correction_by='';rec.correction_date='';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:`Cleared correction (was: ${prev})`,timestamp:now(),version:rec.version});
+  toast('✅ Correction cleared');
+  refreshAll();openDetail(filename);
+}
+
+// ── INDIVIDUAL APPROVAL ────────────────────────────────
+function approveIndividual(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name for the audit trail:','')||'';
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+  const ts=now();
+  rec.path_label=rec.path_label||rec.tech_label||effectiveLabel(rec);
+  rec.path_status='finalized';rec.path_id=user;rec.path_date=ts;
+  rec.path_review_method='individual';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+  rec.audit_trail.push({user,role:'path',action:`Approved`,timestamp:ts,version:rec.version});
+  toast('✅ Approved');
+  refreshAll();openDetail(filename);
+}
+function revokeApproval(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name:','')||'unknown';
+  G.userName=user;
+  rec.path_status='unlabeled';rec.path_id='';rec.path_date='';rec.path_review_method='';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'path',action:'Approval revoked',timestamp:now(),version:rec.version});
+  toast('↩ Approval revoked');
+  refreshAll();openDetail(filename);
+}
+
+// ── EXCLUDE / RESCUE ───────────────────────────────────
+function excludeCell(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name for the audit trail:','')||'';
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+  const ts=now();
+  rec.path_status='excluded';rec.path_id=user;rec.path_date=ts;
+  rec.path_review_method='';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+  rec.audit_trail.push({user,role:'path',action:'Excluded from atlas',timestamp:ts,version:rec.version});
+  toast('🚫 Excluded');
+  refreshAll();openDetail(filename);
+}
+function rescueCell(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name for the audit trail:','')||'';
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+  const ts=now();
+  rec.path_label=rec.path_label||rec.tech_label||effectiveLabel(rec);
+  rec.path_status='finalized';rec.path_id=user;rec.path_date=ts;
+  rec.path_review_method='individual';
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+  rec.audit_trail.push({user,role:'path',action:'Rescued from exclusion — approved',timestamp:ts,version:rec.version});
+  toast('✅ Rescued and approved');
+  refreshAll();openDetail(filename);
+}
+
+// ── CLOSE DETAIL ───────────────────────────────────────
+function closeDetail(e){if(e.target===document.getElementById('detail-overlay'))closeDetailBtn();}
+function closeDetailBtn(){
+  document.getElementById('detail-overlay').classList.add('hidden');
+  G.detailId=null;
+  history.replaceState(null,'',location.pathname+location.search);
+}
+
+// ── PERMALINK ──────────────────────────────────────────
+function checkPermalink(){
+  const hash=location.hash.slice(1);if(!hash)return;
+  const rec=Object.values(G.records).find(r=>r.image_id===hash);
+  if(!rec)return;
+  // Find cell type view, set it, then scroll to card
+  const lbl=effectiveLabel(rec);
+  if(lbl)setView(lbl);
+  setTimeout(()=>{
+    const card=document.getElementById('card-'+rec.image_id);
+    if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('permalink-highlight');}
+    openDetail(rec.filename);
+  },200);
+}
+
+// ── CSV EXPORT ─────────────────────────────────────────
+function exportCSV(){
+  if(!Object.keys(G.records).length){toast('⚠ No data to export.');return;}
+  const rows=[CSV_FIELDS.join(',')];
+  Object.values(G.records).forEach(r=>{
+    rows.push(CSV_FIELDS.map(f=>f==='audit_trail_json'?csvEsc(JSON.stringify(r.audit_trail||[])):csvEsc(String(r[f]??''))).join(','));
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download=`heme_atlas_${dateTimeStr()}.csv`;a.click();
+  toast('CSV exported — replace data/atlas.csv in your repo and push');
+}
+
+// ── BULK APPROVAL ──────────────────────────────────────
+function showApprovalPanel(){
+  if(!Object.keys(G.records).length){toast('⚠ Load a CSV first.');return;}
+  document.getElementById('ap-user').value=G.userName||'';
+  // Build per-cell-type rows
+  const container=document.getElementById('ap-cell-rows');container.innerHTML='';
+  const counts={};const pending={};
+  Object.values(G.records).forEach(r=>{
+    const lbl=effectiveLabel(r);if(!lbl)return;
+    counts[lbl]=(counts[lbl]||0)+1;
+    if(r.path_status!=='finalized')pending[lbl]=(pending[lbl]||0)+1;
+  });
+  const sorted=Object.keys(counts).sort((a,b)=>(MATURATION[a]||99)-(MATURATION[b]||99));
+  sorted.forEach(lbl=>{
+    const pendCount=pending[lbl]||0;
+    const totalCount=counts[lbl];
+    const row=document.createElement('div');row.className='ap-row';
+    row.innerHTML=`
+      <div class="ap-row-label" style="flex:1">${esc(CELL_DISPLAY[lbl]||lbl)}</div>
+      <div class="ap-row-count">${pendCount>0?pendCount+' pending':''} <span style="color:var(--text4)">${totalCount} total</span></div>
+      ${pendCount>0
+        ? `<button class="ap-row-btn" onclick="bulkApprove('celltype','${lbl}')">Approve</button>`
+        : `<span class="ap-row-done">✓ All approved</span>`
+      }`;
+    container.appendChild(row);
+  });
+  // Update bulk action rows
+  const allRecs=Object.values(G.records);
+  const unflaggedPending=allRecs.filter(r=>r.path_status!=='finalized'&&r.discussion_flag!=='true').length;
+  const allPending=allRecs.filter(r=>r.path_status!=='finalized').length;
+  // Unflagged row
+  document.getElementById('ap-count-unflagged').textContent=unflaggedPending>0?unflaggedPending+' pending':'';
+  const btnU=document.getElementById('ap-btn-unflagged');const doneU=document.getElementById('ap-done-unflagged');
+  if(unflaggedPending>0){btnU.classList.remove('hidden');doneU.classList.add('hidden');}
+  else{btnU.classList.add('hidden');doneU.classList.remove('hidden');}
+  // All row
+  document.getElementById('ap-count-all').textContent=allPending>0?allPending+' pending':'';
+  const btnA=document.getElementById('ap-btn-all');const doneA=document.getElementById('ap-done-all');
+  if(allPending>0){btnA.classList.remove('hidden');doneA.classList.add('hidden');}
+  else{btnA.classList.add('hidden');doneA.classList.remove('hidden');}
+  document.getElementById('approval-overlay').classList.remove('hidden');
+}
+
+function hideApprovalPanel(){document.getElementById('approval-overlay').classList.add('hidden');}
+function closeApprovalIfBg(e){if(e.target===document.getElementById('approval-overlay'))hideApprovalPanel();}
+
+function bulkApprove(mode, cellType){
+  const user=document.getElementById('ap-user').value.trim();
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+  let targets=Object.values(G.records).filter(r=>r.path_status!=='finalized'&&r.path_status!=='excluded');
+  let actionLabel='';
+  if(mode==='celltype'){
+    targets=targets.filter(r=>effectiveLabel(r)===cellType);
+    actionLabel=`Approved`;
+  } else if(mode==='unflagged'){
+    targets=targets.filter(r=>r.discussion_flag!=='true');
+    actionLabel=`Approved`;
+  } else if(mode==='all'){
+    if(!confirm(`Approve all ${targets.length} pending cells including flagged? This cannot be undone.`))return;
+    actionLabel=`Approved`;
+  }
+  if(!targets.length){toast('⚠ No pending cells to approve.');return;}
+  const ts=now();
+  targets.forEach(r=>{
+    r.path_label=r.path_label||r.tech_label||effectiveLabel(r);
+    r.path_status='finalized';
+    r.path_id=user;
+    r.path_date=ts;
+    r.path_review_method='bulk';
+    r.version+=1;
+    r.last_modified_by=user;
+    r.last_modified_date=ts;
+    r.audit_trail.push({user,role:'path',action:actionLabel,timestamp:ts,version:r.version});
+  });
+  toast(`✅ Approved ${targets.length} cells`);
+  hideApprovalPanel();
+  refreshAll();
+}
+
+// ── CSV PARSE UTILS ────────────────────────────────────
+function parseRow(row){
+  const res=[];let cur='';let inQ=false;
+  for(let i=0;i<row.length;i++){
+    const c=row[i];
+    if(c==='"'){if(inQ&&row[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur);cur='';}
+    else cur+=c;
+  }
+  res.push(cur);return res;
+}
+function csvEsc(s){return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
+
+// ── UTILS ──────────────────────────────────────────────
+function now(){return new Date().toISOString();}
+function dateStr(){return new Date().toISOString().slice(0,10);}
+function dateTimeStr(){const d=new Date();return d.toISOString().slice(0,10)+'_'+d.toTimeString().slice(0,8).replace(/:/g,'');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,ms=2800){
+  const d=document.createElement('div');d.className='toast';d.textContent=msg;
+  document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),ms);
+}
+
+// ── ZOOM LIGHTBOX ──────────────────────────────────────
+let zoomScale=1;
+function openZoom(src){
+  if(!src)return;
+  zoomScale=1;
+  const img=document.getElementById('zoom-img');
+  img.src=src;
+  // Inherit rotation from detail panel
+  const scaleX=G._detailFlipped?-1:1;
+  img.style.transform=`rotate(${G._detailRotation}deg) scaleX(${scaleX}) scale(1)`;
+  document.getElementById('zoom-overlay').classList.remove('hidden');
+}
+function closeZoom(){
+  document.getElementById('zoom-overlay').classList.add('hidden');
+  document.getElementById('zoom-img').src='';
+}
+document.addEventListener('wheel',e=>{
+  const overlay=document.getElementById('zoom-overlay');
+  if(overlay.classList.contains('hidden'))return;
+  e.preventDefault();
+  zoomScale=Math.min(5,Math.max(1,zoomScale-(e.deltaY*0.002)));
+  const scaleX=G._detailFlipped?-1:1;
+  document.getElementById('zoom-img').style.transform=`rotate(${G._detailRotation}deg) scaleX(${scaleX}) scale(${zoomScale})`;
+},{passive:false});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(!document.getElementById('zoom-overlay').classList.contains('hidden')){closeZoom();return;}
+    if(!document.getElementById('detail-overlay').classList.contains('hidden')){closeDetailBtn();return;}
+  }
+  if(document.getElementById('detail-overlay').classList.contains('hidden'))return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='ArrowLeft')navDetail(-1);
+  if(e.key==='ArrowRight')navDetail(1);
+  if(e.key.toLowerCase()==='r'){rotateDetail(e.shiftKey?-90:90);}
+});
+
+// ── DETAIL NAVIGATION ──────────────────────────────────
+function navDetail(dir){
+  if(!G.detailId)return;
+  const recs=filteredRecords();
+  const filenames=recs.map(r=>r.filename);
+  const idx=filenames.indexOf(G.detailId);
+  if(idx===-1)return;
+  const next=idx+dir;
+  if(next<0||next>=filenames.length)return;
+  openDetail(filenames[next]);
+  updateNavArrows(next,filenames.length);
+}
+function updateNavArrows(idx,total){
+  const prev=document.getElementById('dp-prev');
+  const next=document.getElementById('dp-next');
+  if(prev)prev.disabled=idx<=0;
+  if(next)next.disabled=idx>=total-1;
+}
+
+// ── PERMALINK COPY ──────────────────────────────────────
+function copyPermalink(){
+  const url=location.href.split('#')[0]+'#'+(G.records[G.detailId]?.image_id||'');
+  navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copied to clipboard')).catch(()=>toast('⚠ Copy failed — check browser permissions'));
+}
+
+// ── CONFIDENCE TOGGLE ───────────────────────────────────
+function setDetailConfidence(filename, val){
+  const rec=G.records[filename];if(!rec)return;
+  const user=G.userName||prompt('Your name:','')||'unknown';
+  G.userName=user;
+  const prev=rec.tech_confidence;
+  rec.tech_confidence=val;
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:`Confidence changed: ${prev||'—'} → ${val}`,timestamp:now(),version:rec.version});
+  // Update toggle UI immediately without full re-render
+  document.querySelectorAll('.conf-toggle button').forEach(b=>{
+    b.classList.toggle('active',b.dataset.val===val);
+  });
+  toast(`Confidence set to ${val}`);
+  refreshAll();
+}
+
+// ── INLINE TAG EDIT ─────────────────────────────────────
+function saveDetailTags(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const input=document.getElementById('detail-tag-input');if(!input)return;
+  const user=G.userName||prompt('Your name:','')||'unknown';
+  G.userName=user;
+  const prev=rec.tags;
+  rec.tags=input.value.trim();
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'atlas',action:`Tags updated: "${prev}" → "${rec.tags}"`,timestamp:now(),version:rec.version});
+  toast('✅ Tags saved');
+  refreshAll();openDetail(filename);
+}
+
+// ── SELECTION MODE ─────────────────────────────────────
+function toggleSelectionMode(){
+  G.selectionMode=!G.selectionMode;
+  if(!G.selectionMode) G.selected.clear();
+  const btn=document.getElementById('sel-mode-btn');
+  btn.classList.toggle('active',G.selectionMode);
+  btn.textContent=G.selectionMode?'☑ Selecting…':'☐ Select';
+  updateFAB();
+  renderGallery();
+}
+
+function toggleCardSelection(filename){
+  if(G.selected.has(filename)) G.selected.delete(filename);
+  else G.selected.add(filename);
+  updateFAB();
+  // Update just this card without full re-render
+  const recs=filteredRecords();
+  const rec=G.records[filename];if(!rec)return;
+  const card=document.getElementById('card-'+rec.image_id);
+  if(!card)return;
+  const isSelected=G.selected.has(filename);
+  card.classList.toggle('sel-selected',isSelected);
+  const cb=card.querySelector('.card-checkbox');
+  if(cb)cb.textContent=isSelected?'✓':'';
+}
+
+function clearSelection(){
+  G.selected.clear();
+  updateFAB();
+  renderGallery();
+}
+
+function updateFAB(){
+  const fab=document.getElementById('fab');
+  const n=G.selected.size;
+  if(G.selectionMode&&n>0){
+    fab.classList.remove('hidden');
+    document.getElementById('fab-count').textContent=`${n} selected`;
+  } else {
+    fab.classList.add('hidden');
+  }
+}
+
+// ── BULK ACTION PANELS ─────────────────────────────────
+function openBulkPanel(type){
+  const n=G.selected.size;
+  if(!n){toast('⚠ No cells selected.');return;}
+  const filenames=Array.from(G.selected);
+  const withCommentary=filenames.filter(f=>G.records[f]?.path_commentary).length;
+
+  if(type==='commentary'){
+    document.getElementById('bulk-commentary-desc').textContent=`Apply commentary to ${n} selected cell${n===1?'':'s'}.`;
+    document.getElementById('bulk-commentary-text').value='';
+    document.getElementById('bulk-commentary-user').value=G.userName||'';
+    const warn=document.getElementById('bulk-commentary-warn');
+    if(withCommentary>0){warn.textContent=`⚠ ${withCommentary} cell${withCommentary===1?'':'s'} already have commentary and will be overwritten.`;warn.classList.remove('hidden');}
+    else warn.classList.add('hidden');
+    document.getElementById('bulk-commentary-overlay').classList.remove('hidden');
+  } else if(type==='approve'){
+    const pending=filenames.filter(f=>G.records[f]?.path_status!=='finalized').length;
+    document.getElementById('bulk-approve-desc').textContent=`Approve ${pending} of ${n} selected cells (${n-pending} already approved, will be skipped).`;
+    document.getElementById('bulk-approve-user').value=G.userName||'';
+    document.getElementById('bulk-approve-overlay').classList.remove('hidden');
+  } else if(type==='tag'){
+    document.getElementById('bulk-tag-desc').textContent=`Add or remove a tag on ${n} selected cell${n===1?'':'s'}.`;
+    document.getElementById('bulk-tag-input').value='';
+    document.getElementById('bulk-tag-user').value=G.userName||'';
+    setBulkTagMode('add');
+    document.getElementById('bulk-tag-overlay').classList.remove('hidden');
+  } else if(type==='exclude'){
+    const notExcluded=Array.from(G.selected).filter(f=>G.records[f]?.path_status!=='excluded').length;
+    document.getElementById('bulk-exclude-desc').textContent=`Exclude ${notExcluded} of ${G.selected.size} selected cells from the atlas (${G.selected.size-notExcluded} already excluded, will be skipped).`;
+    document.getElementById('bulk-exclude-user').value=G.userName||'';
+    document.getElementById('bulk-exclude-overlay').classList.remove('hidden');
+  } else if(type==='confidence'){
+    document.getElementById('bulk-confidence-desc').textContent=`Set confidence rating on ${n} selected cell${n===1?'':'s'}.`;
+    document.getElementById('bulk-conf-user').value=G.userName||'';
+    setBulkConf('classic');
+    document.getElementById('bulk-confidence-overlay').classList.remove('hidden');
+  }
+}
+
+function closeBulkPanel(type){
+  document.getElementById(`bulk-${type}-overlay`).classList.add('hidden');
+}
+function closeBulkIfBg(e,id){if(e.target===document.getElementById(id))document.getElementById(id).classList.add('hidden');}
+
+function setBulkTagMode(mode){
+  G._bulkTagMode=mode;
+  document.getElementById('btm-add').classList.toggle('active',mode==='add');
+  document.getElementById('btm-add').classList.toggle('add',mode==='add');
+  document.getElementById('btm-remove').classList.toggle('active',mode==='remove');
+}
+
+function setBulkConf(val){
+  G._bulkConfVal=val;
+  document.getElementById('bcc-classic').classList.toggle('active',val==='classic');
+  document.getElementById('bcc-borderline').classList.toggle('active',val==='borderline');
+}
+
+function commitBulkCommentary(){
+  const text=document.getElementById('bulk-commentary-text').value.trim();
+  const user=document.getElementById('bulk-commentary-user').value.trim();
+  if(!user){toast('⚠ Enter your name.');return;}
+  const withCommentary=Array.from(G.selected).filter(f=>G.records[f]?.path_commentary).length;
+  if(withCommentary>0&&!confirm(`Overwrite existing commentary on ${withCommentary} cell${withCommentary===1?'':'s'}? This cannot be undone.`))return;
+  G.userName=user;
+  const ts=now();
+  let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec)return;
+    const prev=rec.path_commentary||'';
+    rec.path_commentary=text;
+    rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+    rec.audit_trail.push({user,role:'path',action:`Bulk commentary set (prev: "${prev.slice(0,40)}${prev.length>40?'…':''}")`,timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`✅ Commentary applied to ${n} cells`);
+  closeBulkPanel('commentary');
+  refreshAll();
+}
+
+function commitBulkApprove(){
+  const user=document.getElementById('bulk-approve-user').value.trim();
+  if(!user){toast('⚠ Enter your name.');return;}
+  G.userName=user;
+  const ts=now();let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec||rec.path_status==='finalized')return;
+    rec.path_label=rec.path_label||rec.tech_label||effectiveLabel(rec);
+    rec.path_status='finalized';rec.path_id=user;rec.path_date=ts;
+    rec.path_review_method='bulk';
+    rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+    rec.audit_trail.push({user,role:'path',action:'Bulk approved',timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`✅ Approved ${n} cells`);
+  closeBulkPanel('approve');
+  refreshAll();
+}
+
+function commitBulkExclude(){
+  const user=document.getElementById('bulk-exclude-user').value.trim();
+  if(!user){toast('⚠ Enter your name.');return;}
+  G.userName=user;
+  const ts=now();let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec||rec.path_status==='excluded')return;
+    rec.path_status='excluded';rec.path_id=user;rec.path_date=ts;rec.path_review_method='';
+    rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+    rec.audit_trail.push({user,role:'path',action:'Bulk excluded from atlas',timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`🚫 Excluded ${n} cells`);
+  closeBulkPanel('exclude');
+  clearSelection();
+  refreshAll();
+}
+
+function commitBulkTag(){
+  const tag=document.getElementById('bulk-tag-input').value.trim();
+  const user=document.getElementById('bulk-tag-user').value.trim();
+  if(!tag){toast('⚠ Enter a tag.');return;}
+  if(!user){toast('⚠ Enter your name.');return;}
+  G.userName=user;
+  const mode=G._bulkTagMode;
+  const ts=now();let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec)return;
+    const tags=rec.tags?rec.tags.split(',').map(t=>t.trim()).filter(Boolean):[];
+    let updated;
+    if(mode==='add'){
+      if(!tags.includes(tag))tags.push(tag);
+      updated=tags.join(', ');
+    } else {
+      updated=tags.filter(t=>t!==tag).join(', ');
+    }
+    const prev=rec.tags;
+    rec.tags=updated;
+    rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+    rec.audit_trail.push({user,role:'atlas',action:`Bulk tag ${mode}: "${tag}" (prev: "${prev}")`,timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`✅ Tag "${tag}" ${mode==='add'?'added to':'removed from'} ${n} cells`);
+  closeBulkPanel('tag');
+  refreshAll();
+}
+
+function commitBulkConfidence(){
+  const val=G._bulkConfVal;
+  const user=document.getElementById('bulk-conf-user').value.trim();
+  if(!user){toast('⚠ Enter your name.');return;}
+  G.userName=user;
+  const ts=now();let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec)return;
+    const prev=rec.tech_confidence||rec.path_confidence||'—';
+    rec.tech_confidence=val;
+    rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=ts;
+    rec.audit_trail.push({user,role:'atlas',action:`Bulk confidence: ${prev} → ${val}`,timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`✅ Confidence set to "${val}" on ${n} cells`);
+  closeBulkPanel('confidence');
+  refreshAll();
+}
+
+// ── DETAIL ROTATION ────────────────────────────────────
+function applyDetailTransform(){
+  const img=document.getElementById('dp-img');
+  if(!img)return;
+  const scaleX=G._detailFlipped?-1:1;
+  img.style.transform=`rotate(${G._detailRotation}deg) scaleX(${scaleX})`;
+}
+function rotateDetail(deg){
+  G._detailRotation=(G._detailRotation+deg+360)%360;
+  applyDetailTransform();
+}
+function flipDetail(){
+  G._detailFlipped=!G._detailFlipped;
+  applyDetailTransform();
+}
+function resetDetailRotation(){
+  G._detailRotation=0;G._detailFlipped=false;
+  applyDetailTransform();
+}
+
+// ── INLINE COMMENTARY SAVE ─────────────────────────────
+function saveDetailCommentary(filename){
+  const rec=G.records[filename];if(!rec)return;
+  const ta=document.getElementById('detail-commentary-input');if(!ta)return;
+  const user=G.userName||prompt('Your name:','')||'unknown';
+  G.userName=user;
+  const prev=rec.path_commentary||'';
+  rec.path_commentary=ta.value.trim();
+  rec.version+=1;rec.last_modified_by=user;rec.last_modified_date=now();
+  rec.audit_trail.push({user,role:'path',action:`Commentary updated: "${prev.slice(0,40)}" → "${rec.path_commentary.slice(0,40)}"`,timestamp:now(),version:rec.version});
+  toast('✅ Commentary saved');
+  refreshAll();
+  // Don't close detail — keep editing flow open
+}
+
+// ── BATCH IMPORT ───────────────────────────────────────
+let B = {files:[], excluded:new Set()};
+
+function showBatchPanel(){
+  // Populate cell type dropdown
+  const sel=document.getElementById('batch-cell-select');
+  sel.innerHTML='<option value="">— Select cell type —</option>';
+  Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]).forEach(k=>{
+    const o=document.createElement('option');o.value=k;o.textContent=CELL_DISPLAY[k]||k;sel.appendChild(o);
+  });
+  // Pre-fill username if known
+  document.getElementById('batch-user').value=G.userName||'';
+  document.getElementById('batch-tags').value='';
+  // Reset state
+  B.files=[];B.excluded=new Set();
+  document.getElementById('batch-loaded-msg').classList.add('hidden');
+  document.getElementById('batch-preview-grid').classList.add('hidden');
+  document.getElementById('batch-excluded-hint').classList.add('hidden');
+  document.getElementById('batch-summary').classList.add('hidden');
+  document.getElementById('batch-commit-btn').disabled=true;
+  document.getElementById('batch-skip-msg').textContent='';
+  document.getElementById('batch-overlay').classList.remove('hidden');
+}
+function hideBatchPanel(){document.getElementById('batch-overlay').classList.add('hidden');}
+function closeBatchIfBg(e){if(e.target===document.getElementById('batch-overlay'))hideBatchPanel();}
+
+function handleBatchFolder(e){
+  const files=Array.from(e.target.files).filter(f=>f.type.startsWith('image/')).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!files.length){toast('⚠ No image files found.');return;}
+  B.files=files.map(f=>({file:f,url:URL.createObjectURL(f),name:f.name}));
+  B.excluded=new Set();
+  document.getElementById('batch-loaded-msg').textContent=`✓ ${files.length} images loaded`;
+  document.getElementById('batch-loaded-msg').classList.remove('hidden');
+  renderBatchPreview();
+  updateBatchSummary();
+  e.target.value='';
+}
+
+function renderBatchPreview(){
+  const grid=document.getElementById('batch-preview-grid');
+  grid.innerHTML='';grid.classList.remove('hidden');
+  B.files.forEach((img,i)=>{
+    const div=document.createElement('div');
+    div.className='batch-thumb'+(B.excluded.has(i)?' excluded':'');
+    div.id='bt-'+i;
+    div.title=img.name+'\nClick to exclude/include';
+    div.onclick=()=>toggleBatchExclude(i);
+    div.innerHTML=`<img src="${img.url}" loading="lazy" /><div class="bt-name">${esc(img.name)}</div>${B.excluded.has(i)?'<div class="bt-exclude">✕</div>':''}`;
+    grid.appendChild(div);
+  });
+}
+
+function toggleBatchExclude(i){
+  if(B.excluded.has(i))B.excluded.delete(i);
+  else B.excluded.add(i);
+  // Update just this thumb
+  const div=document.getElementById('bt-'+i);
+  if(div){
+    div.className='batch-thumb'+(B.excluded.has(i)?' excluded':'');
+    const ex=div.querySelector('.bt-exclude');
+    if(B.excluded.has(i)&&!ex){const d=document.createElement('div');d.className='bt-exclude';d.textContent='✕';div.appendChild(d);}
+    else if(!B.excluded.has(i)&&ex)ex.remove();
+  }
+  updateBatchSummary();
+}
+
+function updateBatchSummary(){
+  if(!B.files.length)return;
+  const cellType=document.getElementById('batch-cell-select').value;
+  const included=B.files.filter((_,i)=>!B.excluded.has(i));
+  const alreadyExists=included.filter(img=>G.records[img.name]);
+  const toCreate=included.filter(img=>!G.records[img.name]);
+  const excCount=B.excluded.size;
+
+  // Excluded hint
+  const hint=document.getElementById('batch-excluded-hint');
+  if(excCount>0){hint.textContent=`${excCount} cell${excCount===1?'':'s'} excluded — click again to re-include`;hint.classList.remove('hidden');}
+  else hint.classList.add('hidden');
+
+  // Skip message for already-existing records
+  const skipMsg=document.getElementById('batch-skip-msg');
+  if(alreadyExists.length>0)skipMsg.textContent=`⚠ ${alreadyExists.length} image${alreadyExists.length===1?'':'s'} already in records — will be skipped`;
+  else skipMsg.textContent='';
+
+  // Summary banner
+  const summary=document.getElementById('batch-summary');
+  if(cellType&&toCreate.length>0){
+    summary.textContent=`Ready to finalize ${toCreate.length} cell${toCreate.length===1?'':'s'} as ${CELL_DISPLAY[cellType]||cellType}`;
+    summary.classList.remove('hidden');
+  } else if(cellType&&toCreate.length===0&&included.length>0){
+    summary.textContent='All selected images are already in your records.';
+    summary.classList.remove('hidden');
+  } else {
+    summary.classList.add('hidden');
+  }
+
+  // Enable commit only if we have something to do
+  document.getElementById('batch-commit-btn').disabled=!(cellType&&toCreate.length>0);
+}
+
+function commitBatch(){
+  const cellType=document.getElementById('batch-cell-select').value;
+  const caseTag=document.getElementById('batch-case-tag').value.trim();
+  const batchTags=document.getElementById('batch-tags').value.trim();
+  const user=document.getElementById('batch-user').value.trim();
+  if(!cellType){toast('⚠ Please select a cell type.');return;}
+  if(!user){toast('⚠ Please enter your name.');return;}
+  G.userName=user;
+
+  const included=B.files.filter((_,i)=>!B.excluded.has(i));
+  const toCreate=included.filter(img=>!G.records[img.name]);
+  if(!toCreate.length){toast('⚠ Nothing to import.');return;}
+
+  const ts=now();
+  toCreate.forEach(img=>{
+    // Cache the blob URL for display until images are pushed to repo
+    if(img.url) _batchUrlCache[img.name]=img.url;
+    // Create record
+    const rec={
+      image_id:'USR_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      filename:img.name,case_tag:caseTag,uploaded_by:user,upload_date:ts,
+      tech_label:cellType,tech_id:user,tech_date:ts,tech_status:'finalized',
+      image_quality:'acceptable',tech_confidence:'classic',
+      path_label:'',path_id:'',path_date:'',path_status:'unlabeled',
+      path_confidence:'',path_commentary:'',tags:batchTags,
+      version:1,last_modified_by:user,last_modified_date:ts,
+      audit_trail:[{user,role:'tech',action:`Batch finalized as ${cellType}`,timestamp:ts,version:1}],
+      discussion_flag:'false',discussion_comment:'',discussion_flagged_by:'',discussion_date:'',
+      correction_label:'',correction_reason:'',correction_note:'',correction_by:'',correction_date:'',
+      path_review_method:'',
+    };
+    G.records[img.name]=rec;
+  });
+
+  const isAbBatch=batchTags.split(',').map(t=>t.trim().toLowerCase()).includes('aberration');
+  toast(`✅ ${toCreate.length} cells imported${isAbBatch?' → Aberrations library':' as '+(CELL_DISPLAY[cellType]||cellType)}`);
+  hideBatchPanel();
+  setView(isAbBatch?'aberrations':cellType);
+  refreshAll();
+}
+
+// Handle permalink on page load
+window.addEventListener('hashchange',checkPermalink);
+</script>
+</body>
+</html>
