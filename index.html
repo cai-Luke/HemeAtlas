@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heme Atlas — Student Reference</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#0e1118;--surface:#1c2133;--surface2:#232a3d;--surface3:#2a3150;
+    --border:#2e3655;--border2:#3a4468;
+    --text:#eef0f6;--text2:#b0b9d4;--text3:#9ba4c0;--text4:#9ba4c0;
+    --accent:#7c9ef8;--accent-dim:#2f4480;--accent-hover:#96b0fa;
+    --green:#4ade80;--green-dim:#14532d;--green-light:rgba(74,222,128,.1);
+    --amber:#fbbf24;--amber-dim:#78350f;
+    --red:#f87171;--red-dim:#7f1d1d;
+    --gold:#f5c842;--gold-dim:#3d2f00;
+    --shadow:0 2px 8px rgba(0,0,0,.4);
+    --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+    --shadow-xl:0 24px 64px rgba(0,0,0,.8);
+    --radius:8px;--radius-lg:12px;--radius-xl:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  button,select,input{color:inherit;font-family:inherit}
+  button{cursor:pointer}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+
+  /* ── WELCOME SCREEN ── */
+  .welcome{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:500}
+  .welcome.hidden{display:none}
+  .wl-eyebrow{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:18px}
+  .wl-title{font-family:'Instrument Serif',Georgia,serif;font-size:52px;color:var(--text);letter-spacing:-.5px;line-height:1.1;text-align:center;margin-bottom:8px}
+  .wl-title em{font-style:italic;color:var(--accent)}
+  .wl-sub{font-size:15px;color:var(--text3);text-align:center;margin-bottom:48px;max-width:400px;line-height:1.7}
+  .wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 36px;width:420px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-xl)}
+  .wl-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px}
+  .wl-input{width:100%;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
+  .wl-input:focus{border-color:var(--accent)}
+  .wl-load-btn{padding:13px;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;border:none;background:var(--accent);color:#0f1117;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.2px}
+  .wl-load-btn:hover{background:var(--accent-hover)}
+  .wl-load-btn:disabled{opacity:.4;cursor:not-allowed}
+  .wl-hint{font-size:11px;color:var(--text4);text-align:center;line-height:1.6}
+  .wl-divider{height:1px;background:var(--border);margin:4px 0}
+  .wl-step{display:flex;align-items:center;gap:10px}
+  .wl-step-num{width:22px;height:22px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .wl-step-text{font-size:12px;color:var(--text2)}
+  .wl-file-status{font-size:12px;font-weight:600;color:var(--green);display:none}
+  .wl-loading-spinner{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:8px 0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── APP SHELL ── */
+  .app{display:none;height:100vh;flex-direction:column}
+  .app.visible{display:flex}
+
+  /* ── HEADER ── */
+  .header{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+  .logo-mark{font-family:'Instrument Serif',serif;font-size:17px;color:var(--text);letter-spacing:-.2px}
+  .logo-mark em{font-style:italic;color:var(--accent)}
+  .logo-sep{width:1px;height:20px;background:var(--border2)}
+  .logo-sub{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.3px}
+  .header-search{flex:1;max-width:380px;position:relative;margin-left:auto}
+  .header-search input{width:100%;padding:7px 12px 7px 34px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none;transition:all .15s}
+  .header-search input:focus{border-color:var(--accent);background:var(--surface3)}
+  .header-search input::placeholder{color:var(--text4)}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text4);font-size:13px;pointer-events:none}
+  .conf-filter{display:flex;gap:6px;align-items:center}
+  .conf-pill{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);background:transparent;transition:all .15s;white-space:nowrap}
+  .conf-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+  .conf-pill:hover:not(.active){border-color:var(--border2);color:var(--text2)}
+  .stat-pill{font-size:11px;color:var(--text4);padding:0 4px}
+
+  /* ── LAYOUT ── */
+  .body{display:flex;flex:1;overflow:hidden}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+  .sb-section{padding:10px 8px 4px;font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1.2px}
+  .sb-list{flex:1;overflow-y:auto;padding:4px 8px 12px}
+  .sb-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:var(--radius);cursor:pointer;transition:all .12s;border:1px solid transparent;margin-bottom:1px}
+  .sb-item:hover{background:var(--surface2)}
+  .sb-item.active{background:var(--accent-dim);border-color:rgba(124,158,248,.2)}
+  .sb-item-name{font-size:13px;font-weight:500;color:var(--text2)}
+  .sb-item.active .sb-item-name{color:var(--accent);font-weight:600}
+  .sb-count{font-size:10px;font-weight:700;color:var(--text3);background:var(--surface3);padding:1px 7px;border-radius:20px}
+  .sb-item.active .sb-count{background:var(--accent-dim);color:var(--accent)}
+  .sb-divider{height:1px;background:var(--border);margin:6px 4px}
+  .sb-all{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;margin:4px 0;transition:all .12s}
+  .sb-all:hover{background:var(--surface2)}
+  .sb-all.active{background:var(--surface2);border-color:var(--border2)}
+  .sb-all-name{font-size:12px;font-weight:600;color:var(--text3)}
+  .sb-all.active .sb-all-name{color:var(--text)}
+
+  /* ── MAIN GRID ── */
+  .main{flex:1;overflow-y:auto;padding:20px}
+  .grid-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .grid-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--text);letter-spacing:-.3px}
+  .grid-count{font-size:12px;color:var(--text3)}
+  .cell-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .cell-card{border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .18s;border:1.5px solid var(--border);background:var(--surface);position:relative}
+  .cell-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,158,248,.15)}
+  .cell-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--surface2)}
+  .cell-card .cc-footer{padding:8px 10px}
+  .cell-card .cc-label{font-size:11px;font-weight:600;color:var(--text2)}
+  .cell-card .cc-sub{font-size:10px;color:var(--text4);margin-top:1px}
+  .cell-card .cc-border-badge{position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 5px;letter-spacing:.3px}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;color:var(--text3);text-align:center}
+  .empty-state .ei{font-size:40px;opacity:.4}
+  .empty-state h3{font-size:16px;font-weight:600;color:var(--text2)}
+  .empty-state p{font-size:13px;max-width:280px;line-height:1.7;color:var(--text3)}
+
+  /* ── ATTRIBUTION ── */
+  .attribution{position:fixed;bottom:0;left:0;right:0;padding:8px 20px;background:var(--surface);border-top:1px solid var(--border);font-size:10px;color:var(--text4);text-align:center;z-index:100;display:none;line-height:1.6}
+  .app.visible~.attribution{display:block}
+  .attribution a{color:var(--accent);text-decoration:none}
+  .attribution a:hover{text-decoration:underline}
+  .attribution p{margin:0}
+
+  /* ── DETAIL OVERLAY ── */
+  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+  .detail-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:880px;max-width:calc(100vw - 40px);height:82vh;max-height:660px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+  /* ── DETAIL HEADER ── */
+  .dp-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .dp-title{font-family:'Instrument Serif',serif;font-size:20px;color:var(--text);flex:1;letter-spacing:-.2px}
+  .dp-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .dp-badge.classic{background:var(--accent-dim);color:var(--accent)}
+  .dp-badge.borderline{background:var(--amber-dim);color:var(--amber)}
+  .dp-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);transition:all .15s}
+  .dp-close:hover{background:var(--surface2);color:var(--text)}
+
+  /* ── DETAIL NAV ── */
+  .dp-nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:56px;border-radius:var(--radius);background:rgba(15,18,30,.72);border:1px solid rgba(255,255,255,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,255,255,.85);backdrop-filter:blur(6px);box-shadow:0 2px 12px rgba(0,0,0,.3);transition:all .15s;z-index:10}
+  .dp-nav:hover{background:rgba(37,99,235,.8);color:#fff;border-color:rgba(124,158,248,.4)}
+  .dp-nav:disabled{opacity:.15;cursor:not-allowed;pointer-events:none}
+  .dp-nav.prev{left:10px}
+  .dp-nav.next{right:10px}
+
+  /* ── DETAIL BODY ── */
+  .dp-body{display:flex;overflow:hidden;flex:1;min-height:0}
+  .dp-img-col{width:260px;flex-shrink:0;padding:16px;display:flex;flex-direction:column;gap:12px;border-right:1px solid var(--border);overflow-y:auto}
+  .dp-cell-img{width:100%;border-radius:var(--radius-lg);border:1.5px solid var(--border2);object-fit:contain;display:block;background:var(--surface2);max-height:220px;cursor:zoom-in;transition:opacity .15s}
+  .dp-cell-img:hover{opacity:.88}
+  .dp-info-col{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:18px}
+
+  /* ── DETAIL SECTIONS ── */
+  .dp-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text4);margin-bottom:10px}
+  .dp-identity-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .dp-cell-name{font-family:'Instrument Serif',serif;font-size:28px;color:var(--text);letter-spacing:-.3px}
+  .dp-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .dp-tag{font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--surface3);color:var(--text3);border:1px solid var(--border2)}
+  .dp-commentary{font-size:13px;color:var(--text2);line-height:1.8;padding:14px 16px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent);font-style:italic}
+  .dp-commentary.empty{color:var(--text4);font-style:normal;font-size:12px}
+  .dp-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dp-meta-item{padding:10px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
+  .dp-meta-key{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin-bottom:3px}
+  .dp-meta-val{font-size:12px;font-weight:600;color:var(--text2)}
+
+  /* ── RELATED CELLS ── */
+  .related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .related-card{border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .15s;border:1.5px solid var(--border);background:var(--surface2)}
+  .related-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,158,248,.2)}
+  .related-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .related-card .rc-label{font-size:10px;color:var(--text4);padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ── ZOOM LIGHTBOX ── */
+  /* ── DETAIL ROTATION ── */
+  .dp-rotate-bar{display:flex;gap:5px;justify-content:center}
+  .dp-rot-btn{padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .dp-rot-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface3)}
+  .dp-cell-img{transition:transform .2s ease,opacity .15s}
+
+    .zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:900;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+  .zoom-img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--radius-lg);transition:transform .1s ease;transform-origin:center center}
+  .zoom-close{position:fixed;top:20px;right:24px;color:rgba(255,255,255,.5);font-size:26px;cursor:pointer;background:none;border:none;transition:color .15s;z-index:901}
+  .zoom-close:hover{color:#fff}
+  .zoom-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:11px;pointer-events:none;letter-spacing:.3px}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);color:var(--text);padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);z-index:2000;border:1px solid var(--border2);animation:fadeUp .2s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .hidden{display:none!important}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+  /* ── MODE TOGGLE ── */
+  .mode-toggle{display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden}
+  .mode-btn{padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .mode-btn.active{background:var(--accent-dim);color:var(--accent)}
+  .mode-btn:hover:not(.active){color:var(--text2)}
+
+  /* ── TRAINER SHELL ── */
+  .trainer{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:32px 20px;gap:0}
+  .trainer.hidden{display:none!important}
+
+  /* ── TRAINER CONFIG ── */
+  .tr-config{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 40px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px}
+  .tr-config-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--text);margin-bottom:4px}
+  .tr-config-sub{font-size:13px;color:var(--text3);line-height:1.7;margin-top:-10px}
+  .tr-field-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin-bottom:8px}
+  .tr-count-row{display:flex;gap:8px}
+  .tr-count-btn{flex:1;padding:8px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .tr-count-btn.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  .tr-start-btn{padding:13px;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;border:none;background:var(--accent);color:#0f1117;transition:all .15s;font-family:'DM Sans',sans-serif}
+  .tr-start-btn:hover{background:var(--accent-hover)}
+  .tr-start-btn:disabled{opacity:.35;cursor:not-allowed}
+  .tr-keybind-ref{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+  .tr-kb-item{padding:7px 4px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);text-align:center}
+  .tr-kb-key{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)}
+  .tr-kb-name{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.3}
+
+  /* ── TRAINER HUD ── */
+  .tr-hud{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;gap:10px}
+  .tr-hud-score{font-size:13px;font-weight:700;color:var(--text2);white-space:nowrap}
+  .tr-hud-score span{color:var(--accent);font-size:16px}
+  .tr-hud-progress{flex:1;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+  .tr-hud-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+  .tr-hud-right{display:flex;align-items:center;gap:10px}
+  .tr-hud-count{font-size:12px;color:var(--text3);white-space:nowrap}
+  .tr-hud-cycle{font-size:11px;color:var(--text4);white-space:nowrap}
+  .tr-hud-streak{font-size:13px;font-weight:700;color:var(--amber)}
+
+  /* ── QUESTION CARD ── */
+  .tr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);width:100%;max-width:700px;overflow:hidden;box-shadow:var(--shadow-lg);flex-shrink:0}
+  .tr-img-wrap{position:relative;background:var(--surface2);display:flex;align-items:center;justify-content:center;height:300px;cursor:zoom-in;overflow:hidden}
+  .tr-img{max-width:88%;max-height:88%;object-fit:contain;display:block;transition:transform .18s ease}
+  .tr-pending-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.4);background:rgba(0,0,0,.4);padding:3px 10px;border-radius:20px;pointer-events:none;letter-spacing:.3px}
+  .tr-flash-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .15s;pointer-events:none;border-radius:0}
+  .tr-flash-overlay.show{opacity:1}
+  .tr-flash-overlay.pending{background:rgba(124,158,248,.18)}
+  .tr-flash-overlay.correct{background:rgba(74,222,128,.2)}
+  .tr-flash-overlay.wrong{background:rgba(248,113,113,.2)}
+  .tr-flash-label{font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .tr-flash-sub{font-size:12px;color:rgba(255,255,255,.7)}
+
+  /* ── KEY HINT BAR ── */
+  .tr-key-bar{padding:12px 16px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--border);background:var(--surface);min-height:52px}
+  .tr-key-bar-hint{font-size:12px;color:var(--text3);flex:1}
+  .tr-key-display{display:flex;gap:6px;align-items:center}
+  .tr-key-chip{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;border-radius:6px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;border:1.5px solid var(--border2);background:var(--surface3);color:var(--text3)}
+  .tr-key-chip.pressed{border-color:var(--red);background:rgba(248,113,113,.15);color:var(--red)}
+  .tr-key-chip.correct-key{border-color:var(--green);background:var(--green-light);color:var(--green)}
+  .tr-key-chip.pending-key{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);animation:pulse-key .6s ease infinite}
+  @keyframes pulse-key{0%,100%{opacity:1}50%{opacity:.6}}
+  .tr-next-btn{padding:9px 22px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#0f1117;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif;letter-spacing:.2px;box-shadow:0 0 16px rgba(124,158,248,.35)}
+  .tr-next-btn:hover{background:var(--accent-hover);border-color:var(--accent-hover);box-shadow:0 0 22px rgba(124,158,248,.55);transform:translateY(-1px)}
+  .tr-next-btn::after{content:' ↵';font-family:'DM Mono',monospace;font-size:11px;opacity:.7}
+
+  /* ── WRONG ANSWER PANEL ── */
+  .tr-wrong-panel{width:100%;max-width:700px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);margin-top:12px;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .tr-wrong-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--text2)}
+  .tr-wrong-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .tr-wrong-col{padding:14px 16px}
+  .tr-wrong-col:first-child{border-right:1px solid var(--border)}
+  .tr-wrong-col-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .tr-wrong-col-title.wrong-title{color:var(--red)}
+  .tr-wrong-col-title.correct-title{color:var(--green)}
+  .tr-wrong-examples{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .tr-wrong-thumb{border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;transition:border-color .15s}
+  .tr-wrong-thumb:hover{border-color:var(--accent)}
+  .tr-wrong-thumb.wrong-border{border-color:rgba(248,113,113,.4)}
+  .tr-wrong-thumb.correct-border{border-color:rgba(74,222,128,.4)}
+  .tr-wrong-thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .tr-commentary{margin-top:10px;font-size:11px;color:var(--text3);line-height:1.7;font-style:italic;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border-left:2px solid var(--accent)}
+
+  /* ── END REPORT ── */
+  .tr-report{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);width:100%;max-width:700px;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .tr-report-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);text-align:center}
+  .tr-report-grade{font-family:'Instrument Serif',serif;font-size:64px;line-height:1;margin-bottom:6px}
+  .tr-report-pct{font-size:16px;font-weight:700;color:var(--text2);margin-bottom:4px}
+  .tr-report-sub{font-size:13px;color:var(--text3)}
+  .tr-report-body{padding:16px 24px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+  .tr-report-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);background:var(--surface2);cursor:pointer;transition:background .12s}
+  .tr-report-row:hover{background:var(--surface3)}
+  .tr-report-thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;background:var(--surface3)}
+  .tr-report-info{flex:1;min-width:0}
+  .tr-report-correct-lbl{font-size:11px;font-weight:700;color:var(--green)}
+  .tr-report-wrong-lbl{font-size:11px;font-weight:700;color:var(--red)}
+  .tr-report-answer{font-size:11px;color:var(--text3)}
+  .tr-report-key{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--text2);padding:1px 6px;background:var(--surface);border-radius:4px;border:1px solid var(--border2)}
+  .tr-report-btn{padding:10px 22px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .tr-report-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .tr-report-btn.primary{background:var(--accent);color:#0f1117;border-color:var(--accent)}
+  .tr-report-btn.primary:hover{background:var(--accent-hover)}
+  .tr-report-footer{padding:16px 32px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:center}
+  /* ── COMPARE MODE ── */
+  .compare{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:20px;gap:16px}
+  .compare.hidden{display:none!important}
+  .compare-header{display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .compare-title{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text);letter-spacing:-.2px}
+  .compare-hint{font-size:12px;color:var(--text3)}
+  .compare-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;min-height:0}
+  .cmp-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);display:flex;flex-direction:column;overflow:hidden}
+  .cmp-col-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .cmp-select{flex:1;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none;cursor:pointer;appearance:none;-webkit-appearance:none}
+  .cmp-select:focus{border-color:var(--accent)}
+  .cmp-select option{background:var(--surface2);color:var(--text)}
+  .cmp-controls{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .cmp-count-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:'DM Sans',sans-serif}
+  .cmp-count-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .cmp-count-btn:disabled{opacity:.3;cursor:not-allowed}
+  .cmp-count-val{font-size:12px;font-weight:700;color:var(--text2);min-width:16px;text-align:center}
+  .cmp-shuffle{width:28px;height:28px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s}
+  .cmp-shuffle:hover{border-color:var(--accent);color:var(--accent)}
+  .cmp-body{flex:1;overflow-y:auto;padding:12px}
+  .cmp-suggest{display:flex;align-items:center;gap:6px;padding:0 14px 10px;flex-wrap:wrap}
+  .cmp-suggest-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4)}
+  .cmp-suggest-btn{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .12s}
+  .cmp-suggest-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .cmp-grid{display:grid;gap:8px}
+  .cmp-grid[data-count="2"]{grid-template-columns:1fr 1fr}
+  .cmp-grid[data-count="3"]{grid-template-columns:1fr 1fr 1fr}
+  .cmp-grid[data-count="4"]{grid-template-columns:1fr 1fr}
+  .cmp-grid[data-count="5"]{grid-template-columns:1fr 1fr 1fr}
+  .cmp-grid[data-count="6"]{grid-template-columns:1fr 1fr 1fr}
+  .cmp-grid[data-count="7"]{grid-template-columns:1fr 1fr 1fr 1fr}
+  .cmp-grid[data-count="8"]{grid-template-columns:1fr 1fr 1fr 1fr}
+  .cmp-thumb{border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2)}
+  .cmp-thumb:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,158,248,.2)}
+  .cmp-thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .cmp-thumb .cmp-fn{font-size:9px;color:var(--text4);padding:3px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmp-empty{padding:40px 20px;text-align:center;color:var(--text4);font-size:13px;line-height:1.7}
+  .cmp-picker{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px 20px;gap:12px}
+  .cmp-picker-label{font-size:13px;color:var(--text3);text-align:center}
+
+  /* ── KEYBIND REFERENCE TABLE (trainer config) ── */
+  .tr-keybind-table{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .tr-kb-row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border)}
+  .tr-kb-key{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);min-width:22px;text-align:center}
+  .tr-kb-name{font-size:12px;color:var(--text2);font-weight:500}
+  /* ── PAIR DRILL ── */
+  .tr-drill-banner{width:100%;max-width:700px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;margin-bottom:10px}
+  .tr-drill-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(251,191,36,.25);border-radius:20px;padding:3px 10px;white-space:nowrap}
+  .tr-drill-title{font-size:13px;font-weight:600;color:var(--text2);flex:1}
+  .tr-drill-split{display:flex;gap:16px;flex-shrink:0}
+  .tr-drill-side{text-align:center;min-width:80px}
+  .tr-drill-side-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text4);margin-bottom:2px}
+  .tr-drill-side-score{font-size:18px;font-weight:700;font-family:'DM Mono',monospace}
+  .tr-drill-side-score.a-color{color:var(--accent)}
+  .tr-drill-side-score.b-color{color:var(--amber)}
+  .tr-drill-exit{padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+  .tr-drill-exit:hover{border-color:var(--red);color:var(--red)}
+  .tr-key-btn.dim{opacity:.22;pointer-events:none}
+  .tr-key-btn.active-a{border-color:var(--accent);background:var(--accent-dim)}
+  .tr-key-btn.active-b{border-color:var(--amber);background:rgba(251,191,36,.12)}
+
+  /* ── DRILL REPORT ── */
+  .tr-drill-report{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);width:100%;max-width:700px;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .tr-drill-report-header{padding:22px 28px 18px;border-bottom:1px solid var(--border)}
+  .tr-drill-report-pair{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text);margin-bottom:14px;letter-spacing:-.2px}
+  .tr-bias-bars{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tr-bias-col{background:var(--surface2);border-radius:var(--radius);padding:12px 14px}
+  .tr-bias-name{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px}
+  .tr-bias-bar-wrap{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-bottom:4px}
+  .tr-bias-bar{height:100%;border-radius:3px;transition:width .6s ease}
+  .tr-bias-bar.a-bar{background:var(--accent)}
+  .tr-bias-bar.b-bar{background:var(--amber)}
+  .tr-bias-stat{font-size:11px;color:var(--text3)}
+  .tr-bias-stat strong{color:var(--text2)}
+  .tr-drill-report-body{padding:14px 20px;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+  .tr-drill-report-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:center}
+
+  /* ── NUMPAD KEYPAD ── */
+  .tr-keypad{width:100%;max-width:700px;margin-top:10px;flex-shrink:0}
+  .tr-keypad-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin-bottom:8px;padding:0 2px;display:flex;align-items:center;gap:10px}
+  .numlock-warn{font-size:10px;font-weight:700;color:var(--amber);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:2px 10px;letter-spacing:.3px;display:none}
+  .numlock-warn.visible{display:inline-flex;align-items:center;gap:5px}
+
+  /* Grid: 4 cols (matches real numpad), 5 rows */
+  .tr-keypad-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 1fr;
+    grid-template-rows:42px 42px 42px 42px 42px;
+    gap:4px;
+    grid-template-areas:
+      "numlock  div    star   minus "
+      "k7       k8     k9     plus  "
+      "k4       k5     k6     plus  "
+      "k1       k2     k3     enter "
+      "k0       k0     kdot   enter ";
+  }
+  .tr-key-btn{
+    padding:6px 4px 5px;border-radius:var(--radius);border:1.5px solid var(--border2);
+    background:var(--surface2);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:2px;cursor:pointer;transition:all .15s;position:relative;
+    user-select:none;
+  }
+  .tr-key-btn:hover{border-color:var(--accent);background:var(--surface3);transform:translateY(-1px);box-shadow:0 4px 10px rgba(124,158,248,.15)}
+  .tr-key-btn:active{transform:translateY(0);box-shadow:none}
+  .tr-key-btn.flash-correct{border-color:var(--green);background:var(--green-light);animation:flash-correct .5s ease forwards}
+  .tr-key-btn.flash-wrong{border-color:var(--red);background:rgba(248,113,113,.15);animation:flash-wrong .5s ease forwards}
+  @keyframes flash-correct{0%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @keyframes flash-wrong{0%{transform:translateX(-3px)}25%{transform:translateX(3px)}50%{transform:translateX(-2px)}75%{transform:translateX(2px)}100%{transform:translateX(0)}}
+  .tr-key-glyph{font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--accent);line-height:1}
+  .tr-key-label{font-size:9px;font-weight:600;color:var(--text3);text-align:center;line-height:1.3;letter-spacing:.1px}
+
+  /* Grid area assignments */
+  .kp-area-numlock{grid-area:numlock}
+  .kp-area-div    {grid-area:div}
+  .kp-area-star   {grid-area:star}
+  .kp-area-minus  {grid-area:minus}
+  .kp-area-k7     {grid-area:k7}
+  .kp-area-k8     {grid-area:k8}
+  .kp-area-k9     {grid-area:k9}
+  .kp-area-plus   {grid-area:plus}
+  .kp-area-k4     {grid-area:k4}
+  .kp-area-k5     {grid-area:k5}
+  .kp-area-k6     {grid-area:k6}
+  .kp-area-k1     {grid-area:k1}
+  .kp-area-k2     {grid-area:k2}
+  .kp-area-k3     {grid-area:k3}
+  .kp-area-enter  {grid-area:enter}
+  .kp-area-k0     {grid-area:k0}
+  .kp-area-kdot   {grid-area:kdot}
+
+  /* Inactive keys — no cell assigned */
+  .tr-key-btn.inactive{opacity:.25;pointer-events:none;cursor:default}
+  .tr-key-btn.inactive .tr-key-glyph{color:var(--text4)}
+  /* Enter key active — pulses when student should press Enter to continue */
+  .tr-key-btn.enter-active{
+    opacity:1!important;pointer-events:auto;cursor:pointer;
+    border-color:var(--accent);background:var(--accent-dim);
+    animation:enter-pulse .9s ease infinite;
+  }
+  .tr-key-btn.enter-active .tr-key-glyph{color:var(--accent);font-size:13px}
+  .tr-key-btn.enter-active .tr-key-label{color:var(--accent)}
+  @keyframes enter-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,158,248,.0)}50%{box-shadow:0 0 0 4px rgba(124,158,248,.25)}}
+  /* NumLock key special */
+  .tr-key-btn.numlock-key{opacity:.35;pointer-events:none;cursor:default;border-style:dashed}
+  .tr-key-btn.numlock-key .tr-key-glyph{color:var(--text4);font-size:10px}
+
+  /* Other Lymp orphan — outside the numpad grid */
+  .tr-keypad-orphan{margin-top:6px;display:flex;align-items:center;gap:8px}
+  .tr-orphan-label{font-size:10px;color:var(--text4);font-style:italic}
+
+  /* ── CHESS CLOCK ── */
+  .cc-bank{width:100%;max-width:700px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:10px}
+  .cc-bank.hidden{display:none!important}
+  .cc-time-display{font-family:'DM Mono',monospace;font-size:38px;font-weight:700;color:var(--text);letter-spacing:-1px;min-width:90px;line-height:1;transition:color .3s}
+  .cc-time-display.red-zone{color:var(--red);animation:pulse-red 1s ease infinite}
+  @keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.6}}
+  .cc-bank-right{flex:1;display:flex;flex-direction:column;gap:6px}
+  .cc-bank-bar-wrap{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+  .cc-bank-bar{height:100%;border-radius:3px;background:var(--accent);transition:width .5s linear,background .5s}
+  .cc-bank-bar.red-zone{background:var(--red)}
+  .cc-bank-stats{display:flex;gap:14px;align-items:center}
+  .cc-stat{font-size:11px;color:var(--text3)}
+  .cc-stat strong{color:var(--text2);font-family:'DM Mono',monospace}
+  .cc-stat.reward-flash{animation:reward-pop .4s ease}
+  @keyframes reward-pop{0%{transform:scale(1)}50%{transform:scale(1.3);color:var(--green)}100%{transform:scale(1)}}
+  .cc-streak{font-size:11px;font-weight:700;color:var(--amber)}
+  @keyframes cc-reward-anim{0%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:1}100%{transform:scale(1);opacity:0}}
+  .cc-reward-anim{animation:cc-reward-anim .8s ease forwards}
+
+  /* ── CONFIG TOGGLES ── */
+  .tr-toggle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:border-color .15s,background .15s;user-select:none}
+  .tr-toggle-row:hover{border-color:var(--border2)}
+  .tr-toggle-row.on{border-color:var(--accent);background:var(--accent-dim)}
+  .tr-toggle-text{flex:1}
+  .tr-toggle-name{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:2px}
+  .tr-toggle-row.on .tr-toggle-name{color:var(--accent)}
+  .tr-toggle-desc{font-size:11px;color:var(--text4);line-height:1.5}
+  .tr-toggle-row.on .tr-toggle-desc{color:var(--text3)}
+  .tr-switch{width:36px;height:20px;border-radius:20px;background:var(--surface3);border:1px solid var(--border2);position:relative;flex-shrink:0;transition:background .15s,border-color .15s;margin-top:1px}
+  .tr-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:var(--text4);top:2px;left:2px;transition:transform .15s,background .15s}
+  .tr-toggle-row.on .tr-switch{background:var(--accent-dim);border-color:var(--accent)}
+  .tr-toggle-row.on .tr-switch::after{transform:translateX(16px);background:var(--accent)}
+
+  /* ── TIMER ── */
+  .tr-timer-wrap{width:100%;height:3px;background:var(--surface3);flex-shrink:0}
+  .tr-timer-bar{height:100%;background:var(--accent);transition:width 1s linear;width:100%}
+  .tr-timer-bar.urgent{background:var(--red)}
+  .tr-timer-label{position:absolute;top:8px;right:10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text3);opacity:.7;pointer-events:none}
+  .tr-timer-label.urgent{color:var(--red);opacity:1}
+
+</style>
+</head>
+<body>
+
+<!-- WELCOME SCREEN -->
+<div class="welcome" id="welcome">
+  <div class="wl-eyebrow">Hematology Reference</div>
+  <div class="wl-title">Heme <em>Atlas</em></div>
+  <div class="wl-sub">A curated reference library of peripheral blood cell morphology for medical education.</div>
+  <div class="wl-card" style="align-items:center;text-align:center">
+    <div class="wl-loading-spinner"></div>
+    <div class="wl-hint" id="wl-hint">Loading atlas data…</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="header">
+    <div class="logo-mark">Heme <em>Atlas</em></div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">Student Reference</div>
+    <div class="header-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search cells, tags, notes…" oninput="onSearch(this.value)" />
+    </div>
+    <div class="conf-filter">
+      <span class="stat-pill" id="stat-total"></span>
+      <button class="conf-pill active" id="conf-all" onclick="setConfFilter('all')">All</button>
+      <button class="conf-pill" id="conf-classic" onclick="setConfFilter('classic')">Classic</button>
+      <button class="conf-pill" id="conf-borderline" onclick="setConfFilter('borderline')">Borderline</button>
+    </div>
+    <div style="width:1px;height:20px;background:var(--border2)"></div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-browse" onclick="setMode('browse')">Browse</button>
+      <button class="mode-btn" id="mode-compare" onclick="setMode('compare')">Compare</button>
+      <button class="mode-btn" id="mode-train" onclick="setMode('train')">Train</button>
+    </div>
+  </div>
+  <div class="body">
+    <div class="sidebar">
+      <div class="sb-section">Cell Types</div>
+      <div class="sb-list" id="sb-list"></div>
+      <div class="sb-divider" id="sb-ab-divider" style="display:none"></div>
+      <div class="sb-section" id="sb-ab-section" style="display:none">Tag Gallery</div>
+      <div class="sb-list" id="sb-aberration-list" style="flex:0 0 auto;max-height:200px"></div>
+    </div>
+    <div class="main" id="main">
+      <div class="empty-state" id="empty-state">
+        <div class="ei">🔬</div>
+        <h3>Select a cell type</h3>
+        <p>Choose a category from the sidebar to begin browsing.</p>
+      </div>
+      <div id="grid-area" class="hidden">
+        <div class="grid-header">
+          <div class="grid-title" id="grid-title"></div>
+          <div class="grid-count" id="grid-count"></div>
+        </div>
+        <div class="cell-grid" id="cell-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="compare hidden" id="compare">
+    <div class="compare-header">
+      <div class="compare-title">Compare</div>
+      <div class="compare-hint">Select two cell types to study side by side. Click any image to open the full detail view.</div>
+    </div>
+    <div class="compare-cols">
+      <!-- Left column -->
+      <div class="cmp-col" id="cmp-left">
+        <div class="cmp-col-header">
+          <select class="cmp-select" id="cmp-left-select" onchange="cmpSetType('left',this.value)">
+            <option value="">— Select cell type —</option>
+          </select>
+          <div class="cmp-controls">
+            <button class="cmp-count-btn" id="cmp-left-minus" onclick="cmpAdjust('left',-1)">−</button>
+            <span class="cmp-count-val" id="cmp-left-count">4</span>
+            <button class="cmp-count-btn" id="cmp-left-plus" onclick="cmpAdjust('left',1)">+</button>
+            <button class="cmp-shuffle" onclick="cmpShuffle('left')" title="Shuffle examples">↺</button>
+          </div>
+        </div>
+        <div class="cmp-suggest hidden" id="cmp-left-suggest">
+          <span class="cmp-suggest-label">Compare against:</span>
+        </div>
+        <div class="cmp-body" id="cmp-left-body">
+          <div class="cmp-picker"><div class="cmp-picker-label">Select a cell type above<br>to begin comparing</div></div>
+        </div>
+      </div>
+      <!-- Right column -->
+      <div class="cmp-col" id="cmp-right">
+        <div class="cmp-col-header">
+          <select class="cmp-select" id="cmp-right-select" onchange="cmpSetType('right',this.value)">
+            <option value="">— Select cell type —</option>
+          </select>
+          <div class="cmp-controls">
+            <button class="cmp-count-btn" id="cmp-right-minus" onclick="cmpAdjust('right',-1)">−</button>
+            <span class="cmp-count-val" id="cmp-right-count">4</span>
+            <button class="cmp-count-btn" id="cmp-right-plus" onclick="cmpAdjust('right',1)">+</button>
+            <button class="cmp-shuffle" onclick="cmpShuffle('right')" title="Shuffle examples">↺</button>
+          </div>
+        </div>
+        <div class="cmp-suggest hidden" id="cmp-right-suggest">
+          <span class="cmp-suggest-label">Compare against:</span>
+        </div>
+        <div class="cmp-body" id="cmp-right-body">
+          <div class="cmp-picker"><div class="cmp-picker-label">Select a cell type above<br>to begin comparing</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAINER -->
+  <div class="trainer hidden" id="trainer">
+    <!-- CONFIG -->
+    <div id="tr-config-screen" style="width:100%;max-width:520px;padding-top:16px">
+      <div class="tr-config">
+        <div>
+          <div class="tr-config-title">Differential Trainer</div>
+          <div class="tr-config-sub">Identify each cell using the correct keyboard shortcut — the same keys used in the classifier. No hints, no choices.</div>
+        </div>
+        <div>
+          <div class="tr-field-label">Session length</div>
+          <div class="tr-count-row">
+            <button class="tr-count-btn selected" data-n="100" onclick="trSelectCount(this)">100 cells</button>
+            <button class="tr-count-btn" data-n="0" onclick="trSelectCount(this)">Endless</button>
+            <button class="tr-count-btn" data-n="-1" onclick="trSelectCount(this)">♟ Chess Clock</button>
+          </div>
+        </div>
+        <div>
+          <div class="tr-field-label">Difficulty options</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="tr-toggle-row" id="toggle-timed" onclick="trToggle('timed')">
+              <div class="tr-toggle-text">
+                <div class="tr-toggle-name">⏱ Timed — 10 seconds per cell</div>
+                <div class="tr-toggle-desc">Auto-submits as a miss if no key is pressed in time. Simulates clinical time pressure.</div>
+              </div>
+              <div class="tr-switch"></div>
+            </div>
+            <div class="tr-toggle-row" id="toggle-other" onclick="trToggle('other')">
+              <div class="tr-toggle-text">
+                <div class="tr-toggle-name">⚗ Include "Other" category</div>
+                <div class="tr-toggle-desc">Adds artifacts, unacceptable cells, and atypical populations. Not recommended until the standard 14 classes are solid.</div>
+              </div>
+              <div class="tr-switch"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="tr-field-label">Keyboard reference — confirm you know these before starting</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">
+            ℹ Cell frequencies are normalized to a realistic mixed-caseload distribution, not your atlas proportions.
+          </div>
+          <div class="tr-keybind-table" id="tr-keybind-ref"></div>
+        </div>
+        <button class="tr-start-btn" id="tr-start-btn" onclick="startTrainer()">Start Session →</button>
+      </div>
+    </div>
+    <!-- SESSION -->
+    <div id="tr-session-screen" class="hidden" style="width:100%;max-width:700px;padding-top:8px">
+      <!-- Chess Clock bank (shown only in chess clock mode) -->
+      <div class="cc-bank hidden" id="cc-bank">
+        <div class="cc-time-display" id="cc-time-display">1:30</div>
+        <div class="cc-bank-right">
+          <div class="cc-bank-bar-wrap">
+            <div class="cc-bank-bar" id="cc-bank-bar" style="width:100%"></div>
+          </div>
+          <div class="cc-bank-stats">
+            <div class="cc-stat">Cells: <strong id="cc-cell-count">0</strong></div>
+            <div class="cc-stat">+0.6s per correct</div>
+            <div class="cc-stat" id="cc-reward-stat"></div>
+            <div class="cc-streak hidden" id="cc-streak"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Normal HUD (hidden during drill) -->
+      <div class="tr-hud" id="tr-hud">
+        <div class="tr-hud-score">Score <span id="tr-score">0</span></div>
+        <div class="tr-hud-progress"><div class="tr-hud-fill" id="tr-hud-fill" style="width:0%"></div></div>
+        <div class="tr-hud-right">
+          <div class="tr-hud-streak hidden" id="tr-streak">🔥 <span id="tr-streak-n">0</span></div>
+          <div class="tr-hud-count" id="tr-hud-count">0 / 0</div>
+          <div class="tr-hud-cycle hidden" id="tr-hud-cycle"></div>
+        </div>
+      </div>
+      <!-- Drill banner (shown during drill, replaces HUD) -->
+      <div class="tr-drill-banner hidden" id="tr-drill-banner">
+        <div class="tr-drill-badge">🎯 Pair Drill</div>
+        <div class="tr-drill-title" id="tr-drill-title"></div>
+        <div class="tr-drill-split">
+          <div class="tr-drill-side">
+            <div class="tr-drill-side-label" id="drill-a-label"></div>
+            <div class="tr-drill-side-score a-color" id="drill-a-score">0/0</div>
+          </div>
+          <div class="tr-drill-side">
+            <div class="tr-drill-side-label" id="drill-b-label"></div>
+            <div class="tr-drill-side-score b-color" id="drill-b-score">0/0</div>
+          </div>
+        </div>
+        <button class="tr-drill-exit" onclick="exitDrill()">✕ Exit drill</button>
+      </div>
+      <div class="tr-card" id="tr-card">
+        <div class="tr-timer-wrap" id="tr-timer-wrap" style="display:none">
+          <div class="tr-timer-bar" id="tr-timer-bar"></div>
+        </div>
+        <div class="tr-img-wrap" onclick="openZoom(document.getElementById('tr-img').src)" style="position:relative">
+          <img class="tr-img" id="tr-img" src="" alt="" />
+          <div class="tr-flash-overlay" id="tr-flash"></div>
+          <div class="tr-pending-hint" id="tr-pending-hint">Press a key or click a cell type below</div>
+          <div class="tr-timer-label" id="tr-timer-label" style="display:none"></div>
+        </div>
+        <div class="tr-key-bar" id="tr-key-bar">
+          <div class="tr-key-bar-hint" id="tr-key-bar-hint">Identify this cell</div>
+          <div class="tr-key-display" id="tr-key-display"></div>
+          <button class="tr-next-btn hidden" id="tr-next-btn" onclick="nextQuestion()">Next →</button>
+        </div>
+      </div>
+      <div class="tr-keypad" id="tr-keypad">
+        <div class="tr-keypad-label">
+          <span>Click or press a key to identify</span>
+          <span class="numlock-warn hidden" id="numlock-warn">⚠ NumLock appears off — number keys won't register</span>
+        </div>
+        <div class="tr-keypad-grid" id="tr-keypad-grid"></div>
+        <div class="tr-keypad-orphan">
+          <span class="tr-orphan-label">Not on numpad:</span>
+          <div id="tr-keypad-orphan-btns"></div>
+        </div>
+      </div>
+      <!-- Wrong answer panel — shown below card on incorrect -->
+      <div class="tr-wrong-panel hidden" id="tr-wrong-panel">
+        <div class="tr-wrong-header" id="tr-wrong-header"></div>
+        <div class="tr-wrong-cols">
+          <div class="tr-wrong-col">
+            <div class="tr-wrong-col-title wrong-title">You pressed — <span id="wrong-cell-name"></span></div>
+            <div class="tr-wrong-examples" id="wrong-examples"></div>
+          </div>
+          <div class="tr-wrong-col">
+            <div class="tr-wrong-col-title correct-title">Correct answer — <span id="correct-cell-name"></span></div>
+            <div class="tr-wrong-examples" id="correct-examples"></div>
+            <div class="tr-commentary hidden" id="correct-commentary"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- REPORT -->
+    <div id="tr-report-screen" class="hidden" style="width:100%;max-width:700px;padding-top:8px">
+      <div class="tr-report">
+        <div class="tr-report-header">
+          <div class="tr-report-grade" id="tr-report-grade"></div>
+          <div class="tr-report-pct" id="tr-report-pct"></div>
+          <div class="tr-report-sub" id="tr-report-sub"></div>
+        </div>
+        <div class="tr-report-body" id="tr-report-body"></div>
+        <div class="tr-report-footer">
+          <button class="tr-report-btn" onclick="showTrainerConfig()">← Change Settings</button>
+          <button class="tr-report-btn primary" onclick="startTrainer()">Train Again →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .app -->
+
+<!-- ATTRIBUTION -->
+<div class="attribution" id="attribution">
+  <p>Cell images courtesy of <a href="https://cellwiki.net" target="_blank" rel="noopener">CellWiki</a> (a project of LabThings), used for educational purposes.</p>
+  <p>KU-Optofil PBC Dataset by Yarıkan et al. (2026), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. DOI: <a href="https://doi.org/10.1038/s41597-026-06761-y" target="_blank" rel="noopener">10.1038/s41597-026-06761-y</a></p>
+</div>
+<div class="detail-overlay hidden" id="detail-overlay" onclick="closeDetailIfBg(event)">
+  <div class="detail-panel">
+    <button class="dp-nav prev" id="dp-prev" onclick="navDetail(-1)">‹</button>
+    <button class="dp-nav next" id="dp-next" onclick="navDetail(1)">›</button>
+    <div class="dp-header">
+      <div class="dp-title" id="dp-title">—</div>
+      <span class="dp-badge" id="dp-conf-badge"></span>
+      <button class="dp-close" style="margin-left:4px;padding:4px 10px;width:auto;border-radius:var(--radius);font-size:11px;font-weight:700;color:var(--text3)" id="dp-compare-btn" onclick="openCompareFromDetail()">⇄ Compare</button>
+      <button class="dp-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dp-body">
+      <div class="dp-img-col">
+        <img class="dp-cell-img" id="dp-img" src="" alt="" onclick="openZoom(this.src)" />
+        <div class="dp-rotate-bar">
+          <button class="dp-rot-btn" onclick="dpRotate(-90)" title="Rotate left (R)">↺</button>
+          <button class="dp-rot-btn" onclick="dpRotate(90)" title="Rotate right (Shift+R)">↻</button>
+          <button class="dp-rot-btn" onclick="dpFlip()" title="Flip">⇄</button>
+          <button class="dp-rot-btn" onclick="dpResetRotation()" title="Reset">↺↻</button>
+        </div>
+        <div id="dp-tags"></div>
+      </div>
+      <div class="dp-info-col" id="dp-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ZOOM LIGHTBOX -->
+<div class="zoom-overlay hidden" id="zoom-overlay" onclick="closeZoom()">
+  <button class="zoom-close" onclick="closeZoom()">✕</button>
+  <img class="zoom-img" id="zoom-img" src="" alt="" onclick="event.stopPropagation()" />
+  <div class="zoom-hint">Scroll to zoom · Click outside to close</div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────
+const MATURATION = {
+  'NEUTROPHIL':1,'BAND':2,'METAMYELOCYTE':3,'MYELOCYTE':4,'PROMYELOCYTE':5,'BLAST':6,
+  'LYMPHOCYTE':7,'REACTIVE LYMP':8,'OTHER LYMP':9,'PLASMA':10,
+  'MONOCYTE':11,'EOSINOPHIL':12,'BASOPHIL':13,'NRBC':14,'OTHER':15
+};
+const CELL_DISPLAY = {
+  'BLAST':'Blast','PROMYELOCYTE':'Promyelocyte','MYELOCYTE':'Myelocyte',
+  'METAMYELOCYTE':'Metamyelocyte','BAND':'Band','NEUTROPHIL':'Seg Neutrophil',
+  'LYMPHOCYTE':'Lymphocyte','REACTIVE LYMP':'Reactive Lymph','OTHER LYMP':'Other Lymph',
+  'MONOCYTE':'Monocyte','EOSINOPHIL':'Eosinophil','BASOPHIL':'Basophil',
+  'PLASMA':'Plasma Cell','NRBC':'NRBC','OTHER':'Other'
+};
+const CELLS = [
+  {key:'3',name:'NEUTROPHIL',short:'Seg Neutrophil'},
+  {key:'2',name:'LYMPHOCYTE',short:'Lymphocyte'},
+  {key:'1',name:'MONOCYTE',short:'Monocyte'},
+  {key:'4',name:'EOSINOPHIL',short:'Eosinophil'},
+  {key:'+',name:'BASOPHIL',short:'Basophil'},
+  {key:'6',name:'BAND',short:'Band'},
+  {key:'7',name:'METAMYELOCYTE',short:'Metamyelocyte'},
+  {key:'8',name:'MYELOCYTE',short:'Myelocyte'},
+  {key:'9',name:'PROMYELOCYTE',short:'Promyelocyte'},
+  {key:'-',name:'BLAST',short:'Blast'},
+  {key:'5',name:'REACTIVE LYMP',short:'Reactive Lymph'},
+  {key:'/',name:'PLASMA',short:'Plasma Cell'},
+  {key:'0',name:'OTHER',short:'Other'},
+  {key:'.',name:'NRBC',short:'NRBC'},
+  {key:'\\',name:'OTHER LYMP',short:'Other Lymph'},
+];
+const KEY_TO_CELL = Object.fromEntries(CELLS.map(c=>[c.key,c.name]));
+
+// ── CELL ADJACENCY MAP ─────────────────────────────────
+// Drives "Compare against" suggestions in Compare mode.
+// Lists morphologically confusable / maturation-adjacent neighbours.
+const ADJACENT = {
+  'NEUTROPHIL':    ['BAND','MONOCYTE','REACTIVE LYMP'],
+  'BAND':          ['NEUTROPHIL','METAMYELOCYTE','MONOCYTE'],
+  'METAMYELOCYTE': ['BAND','MYELOCYTE','MONOCYTE'],
+  'MYELOCYTE':     ['METAMYELOCYTE','PROMYELOCYTE','MONOCYTE'],
+  'PROMYELOCYTE':  ['MYELOCYTE','BLAST'],
+  'BLAST':         ['PROMYELOCYTE','LYMPHOCYTE','MONOCYTE'],
+  'LYMPHOCYTE':    ['REACTIVE LYMP','OTHER LYMP','BLAST','MONOCYTE'],
+  'REACTIVE LYMP': ['LYMPHOCYTE','OTHER LYMP','BLAST','PLASMA'],
+  'OTHER LYMP':    ['LYMPHOCYTE','REACTIVE LYMP','PLASMA'],
+  'MONOCYTE':      ['NEUTROPHIL','BAND','BLAST','MYELOCYTE'],
+  'EOSINOPHIL':    ['NEUTROPHIL','BAND','BASOPHIL'],
+  'BASOPHIL':      ['EOSINOPHIL','NEUTROPHIL'],
+  'PLASMA':        ['REACTIVE LYMP','LYMPHOCYTE'],
+  'NRBC':          ['LYMPHOCYTE','BLAST'],
+  'OTHER':         ['NEUTROPHIL','LYMPHOCYTE'],
+};
+
+
+// ── TRAINING FREQUENCY WEIGHTS ─────────────────────────
+// Defines target sampling distribution regardless of atlas composition.
+// A class with fewer atlas images than its weight uses all available images.
+// 0 = excluded from training (study-mode only).
+const TRAIN_FREQ = {
+  'NEUTROPHIL':    18,
+  'LYMPHOCYTE':    14,
+  'MONOCYTE':       6,
+  'EOSINOPHIL':     4,
+  'BASOPHIL':       3,
+  'BAND':           8,
+  'METAMYELOCYTE':  6,
+  'MYELOCYTE':      5,
+  'PROMYELOCYTE':   4,
+  'BLAST':          8,
+  'REACTIVE LYMP':  7,
+  'PLASMA':         4,
+  'NRBC':           4,
+  'OTHER LYMP':     0,   // study-mode only
+  'OTHER':          0,   // study-mode only (opt-in via toggle adds this back)
+};
+const CSV_FIELDS = [
+  'tech_label','tech_id','tech_date','tech_status','image_quality','tech_confidence',
+  'path_label','path_id','path_date','path_status','path_confidence','path_commentary',
+  'tags','version','last_modified_by','last_modified_date','audit_trail_json',
+  'discussion_flag','discussion_comment','discussion_flagged_by','discussion_date',
+  'correction_label','correction_reason','correction_note','correction_by','correction_date',
+  'path_review_method'
+];
+
+// ── STATE ──────────────────────────────────────────────
+let S = {
+  _dpRot:0, _dpFlipped:false, // detail panel rotation state
+  records:{},           // filename → record (finalized, non-aberration)
+  aberrationRecords:{}, // filename → record (finalized, aberration-tagged)
+  currentView:'',  // cell type key or 'all'
+  searchQuery:'',
+  confFilter:'all',
+  detailId:null,
+  filteredList:[],  // filenames in current view after filters
+};
+
+// ── IMAGE URL ─────────────────────────────────────────
+// In the hosted version, images are served as static files.
+// The base path can be changed to a CDN URL.
+const IMAGE_BASE = './images/';
+function getImageUrl(filename){
+  if(!filename) return '';
+  return IMAGE_BASE + encodeURIComponent(filename);
+}
+
+// ── LOAD: AUTO-FETCH CSV ───────────────────────────────
+const CSV_URL = './data/atlas.csv';
+
+async function loadAtlas(){
+  const hintEl = document.getElementById('wl-hint');
+  try {
+    const resp = await fetch(CSV_URL);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const lines = text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){ hintEl.textContent='⚠ CSV appears empty.'; return; }
+    const headers = parseRow(lines[0]);
+    let loaded=0;
+    for(let i=1;i<lines.length;i++){
+      const vals=parseRow(lines[i]);
+      if(vals.length<2) continue;
+      const rec={};
+      headers.forEach((h,j)=>{rec[h]=vals[j]||'';});
+      if(rec.path_status!=='finalized') continue;
+      CSV_FIELDS.forEach(f=>{if(rec[f]===undefined)rec[f]='';});
+      if(isAberration(rec)) S.aberrationRecords[rec.filename]=rec;
+      else S.records[rec.filename]=rec;
+      loaded++;
+    }
+    if(!loaded){ hintEl.textContent='⚠ No approved cells found in CSV.'; return; }
+    hintEl.textContent=`✓ ${loaded} cells loaded — launching…`;
+    setTimeout(()=>launchApp(),300);
+  } catch(err) {
+    hintEl.textContent=`⚠ Failed to load atlas data: ${err.message}`;
+    console.error('Atlas load error:', err);
+  }
+}
+
+// Auto-load on page ready
+document.addEventListener('DOMContentLoaded', loadAtlas);
+
+function launchApp(){
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  buildSidebar();
+  buildAberrationSidebar();
+  updateStats();
+}
+
+// ── IMAGE AUGMENTATION ─────────────────────────────────
+// Applied in trainer/drill only — Browse and Compare show canonical orientation
+function applyRandomOrientation(imgEl){
+  const deg=[0,90,180,270][Math.floor(Math.random()*4)];
+  const flip=Math.random()<0.5?-1:1;
+  imgEl.style.transform=`rotate(${deg}deg) scaleX(${flip})`;
+}
+function resetOrientation(imgEl){
+  imgEl.style.transform='';
+}
+
+// ── SIDEBAR ────────────────────────────────────────────
+function effectiveLabel(rec){
+  return rec.correction_label||rec.path_label||rec.tech_label||'';
+}
+
+function isAberration(rec){
+  if(!rec||!rec.tags)return false;
+  return rec.tags.split(',').map(t=>t.trim().toLowerCase()).includes('aberration');
+}
+
+function buildSidebar(){
+  const list=document.getElementById('sb-list');list.innerHTML='';
+  // Count per type (approved cells only, already filtered on load)
+  const counts={};
+  Object.values(S.records).forEach(r=>{
+    if(isAberration(r))return; // aberrations go in their own section
+    const lbl=effectiveLabel(r);if(!lbl)return;
+    counts[lbl]=(counts[lbl]||0)+1;
+  });
+  // All cells entry
+  const allDiv=document.createElement('div');allDiv.className='sb-all';
+  const total=Object.keys(S.records).length;
+  allDiv.innerHTML=`<span class="sb-all-name">All Cells</span><span class="sb-count">${total}</span>`;
+  allDiv.onclick=()=>setView('all');list.appendChild(allDiv);
+  // Divider
+  const div=document.createElement('div');div.className='sb-divider';list.appendChild(div);
+  // Per type
+  const sorted=Object.keys(counts).sort((a,b)=>(MATURATION[a]||99)-(MATURATION[b]||99));
+  sorted.forEach(key=>{
+    const item=document.createElement('div');item.className='sb-item';item.id='sb-'+key;
+    item.innerHTML=`<span class="sb-item-name">${esc(CELL_DISPLAY[key]||key)}</span><span class="sb-count">${counts[key]}</span>`;
+    item.onclick=()=>setView(key);
+    list.appendChild(item);
+  });
+}
+
+function buildAberrationSidebar(){
+  const list=document.getElementById('sb-aberration-list');
+  if(!list)return;
+  list.innerHTML='';
+  // Collect non-'aberration' tags from ALL records (both stores)
+  // Tag gallery is purely tag-driven — 'aberration' is a hide/trainer-exclude sentinel only
+  const tagCounts={};
+  [...Object.values(S.records),...Object.values(S.aberrationRecords)].forEach(r=>{
+    (r.tags||'').split(',').forEach(t=>{
+      t=t.trim().toLowerCase();
+      if(t&&t!=='aberration')tagCounts[t]=(tagCounts[t]||0)+1;
+    });
+  });
+  const hasTagged=Object.keys(tagCounts).length>0;
+  const divider=document.getElementById('sb-ab-divider');
+  const section=document.getElementById('sb-ab-section');
+  if(divider)divider.style.display=hasTagged?'':'none';
+  if(section)section.style.display=hasTagged?'':'none';
+  if(!hasTagged)return;
+  // One entry per tag, sorted alphabetically
+  Object.keys(tagCounts).sort().forEach(tag=>{
+    const item=document.createElement('div');item.className='sb-item';item.id='sb-abtag-'+tag;
+    item.innerHTML=`<span class="sb-item-name" style="font-size:11px">${esc(tag)}</span><span class="sb-count">${tagCounts[tag]}</span>`;
+    item.onclick=()=>setView('abtag:'+tag);
+    list.appendChild(item);
+  });
+}
+
+function setView(key){
+  S.currentView=key;S.searchQuery='';
+  document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
+  let target;
+  if(key==='all') target=document.querySelector('.sb-all');
+  else if(key.startsWith('abtag:')) target=document.getElementById('sb-abtag-'+key.slice(6));
+  else target=document.getElementById('sb-'+key);
+  if(target)target.classList.add('active');
+  renderGrid();
+}
+
+// ── GRID ───────────────────────────────────────────────
+function filteredRecords(){
+  let recs;
+  if(S.currentView&&S.currentView.startsWith('abtag:')){
+    // Tag gallery: search both stores for cells carrying this tag
+    const tag=S.currentView.slice(6);
+    const allRecs=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
+    recs=allRecs.filter(r=>(r.tags||'').split(',').map(t=>t.trim().toLowerCase()).includes(tag));
+  } else {
+    // Normal cell views: only non-aberration records
+    recs=Object.values(S.records);
+    if(S.currentView&&S.currentView!=='all')
+      recs=recs.filter(r=>effectiveLabel(r)===S.currentView);
+  }
+  if(S.confFilter==='classic')
+    recs=recs.filter(r=>r.tech_confidence!=='borderline'&&r.path_confidence!=='borderline');
+  if(S.confFilter==='borderline')
+    recs=recs.filter(r=>r.tech_confidence==='borderline'||r.path_confidence==='borderline');
+  if(S.searchQuery){
+    const q=S.searchQuery.toLowerCase();
+    recs=recs.filter(r=>
+      (CELL_DISPLAY[effectiveLabel(r)]||'').toLowerCase().includes(q)||
+      (r.tags||'').toLowerCase().includes(q)||
+      (r.path_commentary||'').toLowerCase().includes(q)||
+      (r.case_tag||'').toLowerCase().includes(q)
+    );
+  }
+  recs.sort((a,b)=>{
+    const la=effectiveLabel(a),lb=effectiveLabel(b);
+    return ((MATURATION[la]||99)-(MATURATION[lb]||99))||a.filename.localeCompare(b.filename);
+  });
+  return recs;
+}
+
+// ── CHUNKED GRID RENDERING ────────────────────────────
+// Renders cards in batches of GRID_CHUNK_SIZE. A sentinel div at the
+// bottom of the grid triggers the next batch via IntersectionObserver.
+// This keeps DOM node count low and avoids multi-second freezes on
+// large datasets (6,000+ cells).
+const GRID_CHUNK_SIZE = 60;
+let _gridObserver = null;
+let _gridRecs = [];     // full filtered list for current view
+let _gridCursor = 0;    // how many cards have been rendered so far
+let _gridIsTagView = false;
+
+function renderGrid(){
+  const empty=document.getElementById('empty-state');
+  const gridArea=document.getElementById('grid-area');
+  if(!S.currentView){empty.classList.remove('hidden');gridArea.classList.add('hidden');return;}
+  const recs=filteredRecords();
+  S.filteredList=recs.map(r=>r.filename);
+  _gridIsTagView=S.currentView&&S.currentView.startsWith('abtag:');
+  const lbl=_gridIsTagView
+    ? S.currentView.slice(6).replace(/\b\w/g,c=>c.toUpperCase())
+    : (S.currentView==='all'?'All Cells':(CELL_DISPLAY[S.currentView]||S.currentView));
+  document.getElementById('grid-title').textContent=lbl;
+  document.getElementById('grid-count').textContent=`${recs.length} cell${recs.length!==1?'s':''}`;
+  const grid=document.getElementById('cell-grid');grid.innerHTML='';
+
+  // Tear down previous observer
+  if(_gridObserver){_gridObserver.disconnect();_gridObserver=null;}
+
+  if(!recs.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px 0;text-align:center;color:var(--text4);font-size:13px">No cells match this filter.</div>`;
+    empty.classList.add('hidden');gridArea.classList.remove('hidden');return;
+  }
+
+  _gridRecs=recs;
+  _gridCursor=0;
+
+  // Render first chunk immediately
+  _appendGridChunk(grid);
+
+  // Set up IntersectionObserver on a sentinel element for infinite scroll
+  _setupGridObserver(grid);
+
+  empty.classList.add('hidden');gridArea.classList.remove('hidden');
+}
+
+function _makeCard(rec){
+  const isBorderline=rec.tech_confidence==='borderline'||rec.path_confidence==='borderline';
+  const card=document.createElement('div');card.className='cell-card';
+  const _lbl=CELL_DISPLAY[effectiveLabel(rec)]||effectiveLabel(rec)||'—';
+  const _tagLabel=_gridIsTagView
+    ? (rec.tags||'').split(',').filter(t=>t.trim().toLowerCase()!=='aberration').map(t=>t.trim()).join(', ')||_lbl
+    : null;
+  card.innerHTML=`
+    <img src="${getImageUrl(rec.filename)}" loading="lazy" alt="${esc(rec.filename)}" />
+    <div class="cc-footer">
+      <div class="cc-label" style="${_gridIsTagView?'color:var(--amber)':''}">${_gridIsTagView?esc(_tagLabel):esc(_lbl)}</div>
+      <div class="cc-sub">${_gridIsTagView?esc(_lbl):esc(rec.filename)}</div>
+    </div>
+    ${isBorderline?'<div class="cc-border-badge">BORDERLINE</div>':''}\`;
+  card.onclick=()=>openDetail(rec.filename);
+  return card;
+}
+
+function _appendGridChunk(grid){
+  const end=Math.min(_gridCursor+GRID_CHUNK_SIZE, _gridRecs.length);
+  const frag=document.createDocumentFragment();
+  for(let i=_gridCursor;i<end;i++){
+    frag.appendChild(_makeCard(_gridRecs[i]));
+  }
+  // Remove old sentinel before appending new cards
+  const oldSentinel=grid.querySelector('.grid-sentinel');
+  if(oldSentinel) oldSentinel.remove();
+  grid.appendChild(frag);
+  _gridCursor=end;
+
+  // Add new sentinel if more cards remain
+  if(_gridCursor<_gridRecs.length){
+    const sentinel=document.createElement('div');
+    sentinel.className='grid-sentinel';
+    sentinel.style.cssText='grid-column:1/-1;height:1px';
+    grid.appendChild(sentinel);
+  }
+}
+
+function _setupGridObserver(grid){
+  const scrollParent=document.getElementById('main');
+  _gridObserver=new IntersectionObserver((entries)=>{
+    for(const entry of entries){
+      if(entry.isIntersecting && _gridCursor<_gridRecs.length){
+        _appendGridChunk(grid);
+        // Re-observe the new sentinel if one was added
+        const newSentinel=grid.querySelector('.grid-sentinel');
+        if(newSentinel) _gridObserver.observe(newSentinel);
+      }
+    }
+  },{root:scrollParent, rootMargin:'400px'});
+  const sentinel=grid.querySelector('.grid-sentinel');
+  if(sentinel) _gridObserver.observe(sentinel);
+}
+
+function onSearch(q){
+  S.searchQuery=q;
+  if(!S.currentView)setView('all');
+  else renderGrid();
+}
+
+function setConfFilter(f){
+  S.confFilter=f;
+  document.querySelectorAll('.conf-pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('conf-'+f).classList.add('active');
+  renderGrid();
+}
+
+function updateStats(){
+  const total=Object.keys(S.records).length;
+  document.getElementById('stat-total').textContent=`${total} cells`;
+}
+
+// ── DETAIL PANEL ───────────────────────────────────────
+// ── DETAIL ROTATION ────────────────────────────────────
+function dpApplyTransform(){
+  const img=document.getElementById('dp-img');if(!img)return;
+  img.style.transform=`rotate(${S._dpRot}deg) scaleX(${S._dpFlipped?-1:1})`;
+}
+function dpRotate(deg){S._dpRot=(S._dpRot+deg+360)%360;dpApplyTransform();}
+function dpFlip(){S._dpFlipped=!S._dpFlipped;dpApplyTransform();}
+function dpResetRotation(){S._dpRot=0;S._dpFlipped=false;dpApplyTransform();}
+
+function openDetail(filename){
+  const rec=S.records[filename]||S.aberrationRecords[filename];if(!rec)return;
+  S.detailId=filename;
+  // Reset rotation on every new cell
+  S._dpRot=0;S._dpFlipped=false;
+  const dpImg=document.getElementById('dp-img');if(dpImg)dpImg.style.transform='';
+  const lbl=effectiveLabel(rec);
+  const displayLbl=CELL_DISPLAY[lbl]||lbl||'Unknown';
+  const isBorderline=rec.tech_confidence==='borderline'||rec.path_confidence==='borderline';
+
+  // Header
+  document.getElementById('dp-title').textContent=displayLbl;
+  const badge=document.getElementById('dp-conf-badge');
+  if(isBorderline){badge.textContent='Borderline';badge.className='dp-badge borderline';}
+  else{badge.textContent='Classic';badge.className='dp-badge classic';}
+
+  // Image
+  document.getElementById('dp-img').src=getImageUrl(filename);
+
+  // Tags
+  const tagsEl=document.getElementById('dp-tags');
+  const tags=(rec.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  tagsEl.innerHTML=tags.length
+    ?`<div class="dp-tags">${tags.map(t=>`<span class="dp-tag">${esc(t)}</span>`).join('')}</div>`
+    :'';
+
+  // Info column
+  renderDetailInfo(rec,displayLbl);
+
+  // Nav arrows
+  const idx=S.filteredList.indexOf(filename);
+  document.getElementById('dp-prev').disabled=idx<=0;
+  document.getElementById('dp-next').disabled=idx>=S.filteredList.length-1;
+
+  document.getElementById('detail-overlay').classList.remove('hidden');
+}
+
+function renderDetailInfo(rec,displayLbl){
+  const el=document.getElementById('dp-info');el.innerHTML='';
+
+  // Commentary — most prominent
+  const commentary=rec.path_commentary||'';
+  el.innerHTML+=`<div>
+    <div class="dp-section-label">Morphology Notes</div>
+    <div class="dp-commentary ${commentary?'':'empty'}">${commentary?esc(commentary):'No morphology notes have been added for this cell yet.'}</div>
+  </div>`;
+
+  // Meta grid
+  const lbl=effectiveLabel(rec);
+  const corrected=rec.correction_label?`${CELL_DISPLAY[rec.correction_label]||rec.correction_label}`:null;
+  el.innerHTML+=`<div>
+    <div class="dp-section-label">Identity</div>
+    <div class="dp-meta-grid">
+      <div class="dp-meta-item">
+        <div class="dp-meta-key">Cell Type</div>
+        <div class="dp-meta-val">${esc(displayLbl)}</div>
+      </div>
+      ${corrected?`<div class="dp-meta-item" style="border-color:rgba(124,158,248,.3)">
+        <div class="dp-meta-key">Reclassified From</div>
+        <div class="dp-meta-val" style="color:var(--accent)">${esc(corrected)}</div>
+      </div>`:''}
+      <div class="dp-meta-item">
+        <div class="dp-meta-key">Quality</div>
+        <div class="dp-meta-val" style="color:${rec.image_quality==='poor'?'var(--red)':'var(--green)'}">
+          ${rec.image_quality==='poor'?'⚠ Poor':'✓ Acceptable'}
+        </div>
+      </div>
+      ${rec.case_tag?`<div class="dp-meta-item">
+        <div class="dp-meta-key">Case</div>
+        <div class="dp-meta-val">${esc(rec.case_tag)}</div>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // Related cells
+  renderRelated(rec,el);
+}
+
+function renderRelated(rec,el){
+  const lbl=effectiveLabel(rec);
+  const others=Object.values(S.records)
+    .filter(r=>effectiveLabel(r)===lbl&&r.filename!==rec.filename)
+    .sort(()=>Math.random()-.5)
+    .slice(0,4);
+  if(!others.length){
+    el.innerHTML+=`<div><div class="dp-section-label">Related Cells</div>
+      <div style="font-size:12px;color:var(--text4);padding:8px 0">No other ${esc(CELL_DISPLAY[lbl]||lbl)} cells in the atlas yet.</div></div>`;
+    return;
+  }
+  let html=`<div><div class="dp-section-label">More ${esc(CELL_DISPLAY[lbl]||lbl)} Examples</div>
+    <div class="related-grid">`;
+  others.forEach(r=>{
+    html+=`<div class="related-card" onclick="openDetail('${esc(r.filename)}')">
+      <img src="${getImageUrl(r.filename)}" loading="lazy" alt="${esc(r.filename)}" />
+      <div class="rc-label">${esc(r.filename)}</div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  el.innerHTML+=html;
+}
+
+function navDetail(dir){
+  const idx=S.filteredList.indexOf(S.detailId);
+  if(idx===-1)return;
+  const next=idx+dir;
+  if(next<0||next>=S.filteredList.length)return;
+  openDetail(S.filteredList[next]);
+}
+
+function closeDetail(){document.getElementById('detail-overlay').classList.add('hidden');S.detailId=null;}
+function closeDetailIfBg(e){if(e.target===document.getElementById('detail-overlay'))closeDetail();}
+
+function openCompareFromDetail(){
+  try{
+    const rec=S.records[S.detailId]; if(!rec) return;
+    const type=effectiveLabel(rec);
+    const suggested=cmpAutoSuggest(type);
+    closeDetail();
+    setMode('compare',{leftType:type, rightType:suggested||''});
+  }catch(e){
+    toast('⚠ Compare error: '+e.message);
+    console.error(e);
+  }
+}
+
+// ── ZOOM ───────────────────────────────────────────────
+let zoomScale=1;
+function openZoom(src){
+  if(!src)return;zoomScale=1;
+  const trainerImg=document.getElementById('tr-img');
+  // Carry the trainer's rotation into the zoom so orientation matches
+  const currentTransform=trainerImg&&trainerImg.style.transform?trainerImg.style.transform:'';
+  const img=document.getElementById('zoom-img');
+  img.src=src;
+  // Combine existing orientation transform with scale(1)
+  img.style.transform=currentTransform?`${currentTransform} scale(1)`:'scale(1)';
+  document.getElementById('zoom-overlay').classList.remove('hidden');
+}
+function closeZoom(){document.getElementById('zoom-overlay').classList.add('hidden');}
+document.addEventListener('wheel',e=>{
+  const zo=document.getElementById('zoom-overlay');
+  if(zo.classList.contains('hidden'))return;
+  e.preventDefault();
+  zoomScale=Math.min(5,Math.max(1,zoomScale-(e.deltaY*0.002)));
+  const img=document.getElementById('zoom-img');
+  // Preserve orientation transform alongside scale
+  const base=img.style.transform.replace(/scale\([^)]+\)/,'').trim();
+  img.style.transform=`${base} scale(${zoomScale})`.trim();
+},{passive:false});
+
+
+// ── CSV PARSE ──────────────────────────────────────────
+function parseRow(row){
+  const res=[];let cur='';let inQ=false;
+  for(let i=0;i<row.length;i++){
+    const c=row[i];
+    if(c==='"'){if(inQ&&row[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur);cur='';}
+    else cur+=c;
+  }
+  res.push(cur);return res;
+}
+
+// ── MODE TOGGLE ────────────────────────────────────────
+function setMode(mode,opts={}){
+  const isBrowse=mode==='browse', isCompare=mode==='compare', isTrain=mode==='train';
+  document.getElementById('mode-browse').classList.toggle('active',isBrowse);
+  document.getElementById('mode-compare').classList.toggle('active',isCompare);
+  document.getElementById('mode-train').classList.toggle('active',isTrain);
+  document.querySelector('.body').classList.toggle('hidden',!isBrowse);
+  document.getElementById('compare').classList.toggle('hidden',!isCompare);
+  document.getElementById('trainer').classList.toggle('hidden',!isTrain);
+  // Reset trainer image orientation when leaving train mode
+  if(!isTrain) resetOrientation(document.getElementById('tr-img'));
+  // conf filter only relevant in browse
+  document.querySelector('.conf-filter').style.opacity=isBrowse?'1':'0.3';
+  document.querySelector('.conf-filter').style.pointerEvents=isBrowse?'auto':'none';
+  if(isTrain) showTrainerConfig();
+  if(isCompare) initCompare(opts);
+}
+// ── COMPARE ────────────────────────────────────────────
+const CMP = {
+  left:  { type:'', count:4, pool:[], shown:[] },
+  right: { type:'', count:4, pool:[], shown:[] },
+};
+
+function initCompare(opts={}){
+  buildCmpSelects();
+  // Seed from opts (e.g. coming from Browse detail panel)
+  if(opts.leftType) cmpSetType('left', opts.leftType, false);
+  if(opts.rightType) cmpSetType('right', opts.rightType, false);
+  // If left set but right not, auto-suggest from adjacency
+  if(CMP.left.type && !CMP.right.type){
+    const suggested=cmpAutoSuggest(CMP.left.type);
+    if(suggested) cmpSetType('right', suggested, false);
+  }
+}
+
+function buildCmpSelects(){
+  // Count approved cells per type
+  const counts={};
+  Object.values(S.records).forEach(r=>{
+    const lbl=effectiveLabel(r); if(!lbl) return;
+    counts[lbl]=(counts[lbl]||0)+1;
+  });
+  const sorted=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
+  ['left','right'].forEach(side=>{
+    const sel=document.getElementById(`cmp-${side}-select`);
+    const cur=sel.value;
+    sel.innerHTML=`<option value="">— Select cell type —</option>`;
+    sorted.forEach(key=>{
+      const n=counts[key]||0;
+      const opt=document.createElement('option');
+      opt.value=key; opt.disabled=n===0;
+      opt.textContent=`${CELL_DISPLAY[key]||key}  (${n})`;
+      sel.appendChild(opt);
+    });
+    if(cur) sel.value=cur;
+  });
+}
+
+function cmpAutoSuggest(type){
+  const adj=(ADJACENT[type]||[]);
+  const counts={};
+  Object.values(S.records).forEach(r=>{
+    const lbl=effectiveLabel(r); if(!lbl) return;
+    counts[lbl]=(counts[lbl]||0)+1;
+  });
+  // Return first adjacent type that has cells and isn't already selected on other side
+  return adj.find(a=>counts[a]>0 && a!==CMP.left.type && a!==CMP.right.type) || null;
+}
+
+function cmpSetType(side, type, renderSuggests=true){
+  CMP[side].type=type;
+  document.getElementById(`cmp-${side}-select`).value=type;
+  // Build pool
+  CMP[side].pool=Object.values(S.records)
+    .filter(r=>effectiveLabel(r)===type)
+    .sort(()=>Math.random()-.5);
+  CMP[side].shown=[...CMP[side].pool].slice(0,CMP[side].count);
+  renderCmpCol(side);
+  // Show adjacency suggestions in the other side's suggest bar if not yet set
+  if(renderSuggests) renderCmpSuggests(side);
+  updateCmpCountBtns(side);
+}
+
+function renderCmpSuggests(changedSide){
+  // Show suggestions for the OTHER side
+  const otherSide=changedSide==='left'?'right':'left';
+  const sourceType=CMP[changedSide].type;
+  if(!sourceType){
+    document.getElementById(`cmp-${otherSide}-suggest`).classList.add('hidden');
+    return;
+  }
+  const adj=(ADJACENT[sourceType]||[]);
+  const counts={};
+  Object.values(S.records).forEach(r=>{
+    const lbl=effectiveLabel(r); if(!lbl) return;
+    counts[lbl]=(counts[lbl]||0)+1;
+  });
+  const available=adj.filter(a=>counts[a]>0);
+  if(!available.length){
+    document.getElementById(`cmp-${otherSide}-suggest`).classList.add('hidden');
+    return;
+  }
+  const suggestEl=document.getElementById(`cmp-${otherSide}-suggest`);
+  // Remove old buttons, keep the label
+  suggestEl.querySelectorAll('.cmp-suggest-btn').forEach(b=>b.remove());
+  available.forEach(a=>{
+    const btn=document.createElement('button');
+    btn.className='cmp-suggest-btn';
+    btn.textContent=CELL_DISPLAY[a]||a;
+    btn.onclick=()=>cmpSetType(otherSide, a);
+    suggestEl.appendChild(btn);
+  });
+  suggestEl.classList.remove('hidden');
+}
+
+function renderCmpCol(side){
+  const body=document.getElementById(`cmp-${side}-body`);
+  const {type, count, pool, shown}=CMP[side];
+  if(!type){
+    body.innerHTML=`<div class="cmp-picker"><div class="cmp-picker-label">Select a cell type above<br>to begin comparing</div></div>`;
+    return;
+  }
+  if(!pool.length){
+    body.innerHTML=`<div class="cmp-empty">No approved cells with images for this type yet.</div>`;
+    return;
+  }
+  const grid=document.createElement('div');
+  grid.className='cmp-grid'; grid.dataset.count=Math.min(count,4)<=2?2:Math.min(count,4)<=3?3:Math.min(count,4)<=4?4:Math.min(count,6)<=5?5:Math.min(count,6)<=6?6:count<=7?7:8;
+  grid.dataset.count=count;
+  shown.forEach(rec=>{
+    const th=document.createElement('div'); th.className='cmp-thumb';
+    th.innerHTML=`<img src="${getImageUrl(rec.filename)}" loading="lazy" alt="" /><div class="cmp-fn">${esc(rec.filename)}</div>`;
+    th.onclick=()=>{ setMode('browse'); setView(type); setTimeout(()=>openDetail(rec.filename),80); };
+    grid.appendChild(th);
+  });
+  body.innerHTML='';
+  body.appendChild(grid);
+}
+
+function cmpShuffle(side){
+  CMP[side].pool.sort(()=>Math.random()-.5);
+  CMP[side].shown=[...CMP[side].pool].slice(0,CMP[side].count);
+  renderCmpCol(side);
+}
+
+function cmpAdjust(side, delta){
+  const n=Math.max(2, Math.min(8, CMP[side].count+delta));
+  CMP[side].count=n;
+  document.getElementById(`cmp-${side}-count`).textContent=n;
+  CMP[side].shown=[...CMP[side].pool].slice(0,n);
+  renderCmpCol(side);
+  updateCmpCountBtns(side);
+}
+
+function updateCmpCountBtns(side){
+  document.getElementById(`cmp-${side}-minus`).disabled=CMP[side].count<=2;
+  document.getElementById(`cmp-${side}-plus`).disabled=CMP[side].count>=8;
+}
+
+// ── TRAINER STATE ──────────────────────────────────────
+let T = {
+  sessionCount: 100,  // 0 = endless, -1 = chess clock
+  includeOther: false,// opt-in: include OTHER category
+  timedMode: false,   // opt-in: 10-second countdown per cell
+  timerSeconds: 10,
+  _timerInterval: null,
+  _timerRemaining: 0,
+  pool: [],           // all eligible recs
+  queue: [],          // current cycle queue
+  cycleNum: 1,
+  totalAnswered: 0,
+  correct: 0,
+  streak: 0,
+  log: [],            // {rec, isCorrect, chosenKey, chosenName, correctKey, correctName}
+  phase: 'idle',      // idle | pending | answered | report
+  _currentRec: null,
+  _correctLabel: null,
+  _correctCell: null,
+};
+
+// ── CHESS CLOCK ─────────────────────────────────────────
+const CC = {
+  BANK_START:   90,    // seconds
+  REWARD:       0.6,   // seconds added per correct answer
+  RED_ZONE:     15,    // seconds remaining when display turns red
+  _bank:        90,
+  _interval:    null,
+  _lastTick:    null,
+};
+
+function ccIsActive(){ return T.sessionCount===-1; }
+
+function ccStart(){
+  CC._bank=CC.BANK_START;
+  CC._lastTick=performance.now();
+  document.getElementById('cc-bank').classList.remove('hidden');
+  document.getElementById('cc-cell-count').textContent='0';
+  document.getElementById('cc-streak').classList.add('hidden');
+  document.getElementById('cc-reward-stat').textContent='';
+  ccRender();
+  CC._interval=setInterval(ccTick, 100); // 100ms precision
+}
+
+function ccStop(){
+  clearInterval(CC._interval);
+  CC._interval=null;
+}
+
+function ccTick(){
+  if(T.phase!=='pending') return; // clock only drains while awaiting answer
+  const now=performance.now();
+  const elapsed=(now-CC._lastTick)/1000;
+  CC._lastTick=now;
+  CC._bank=Math.max(0, CC._bank-elapsed);
+  ccRender();
+  if(CC._bank<=0) ccExpired();
+}
+
+function ccRender(){
+  const b=CC._bank;
+  const mins=Math.floor(b/60);
+  const secs=Math.floor(b%60);
+  const frac=Math.floor((b%1)*10); // tenths
+  const display=b<10
+    ? `${secs}.${frac}`      // show tenths when under 10s
+    : b<60
+    ? `0:${String(secs).padStart(2,'0')}`
+    : `${mins}:${String(secs).padStart(2,'0')}`;
+  const timeEl=document.getElementById('cc-time-display');
+  const barEl=document.getElementById('cc-bank-bar');
+  timeEl.textContent=display;
+  const pct=Math.min(100,(b/CC.BANK_START)*100);
+  barEl.style.width=pct+'%';
+  const red=b<=CC.RED_ZONE;
+  timeEl.classList.toggle('red-zone',red);
+  barEl.classList.toggle('red-zone',red);
+}
+
+function ccCorrect(){
+  CC._bank=Math.min(CC._bank+CC.REWARD, CC.BANK_START); // cap at starting bank
+  // Flash the reward stat
+  const rewardEl=document.getElementById('cc-reward-stat');
+  rewardEl.textContent=`+${CC.REWARD}s`;
+  rewardEl.style.color='var(--green)';
+  rewardEl.style.fontWeight='700';
+  rewardEl.classList.remove('cc-reward-anim');
+  void rewardEl.offsetWidth;
+  rewardEl.classList.add('cc-reward-anim');
+  setTimeout(()=>{ rewardEl.textContent=''; rewardEl.classList.remove('cc-reward-anim'); },800);
+  ccRender();
+}
+
+function ccUpdateStreak(){
+  const streakEl=document.getElementById('cc-streak');
+  const cellEl=document.getElementById('cc-cell-count');
+  cellEl.textContent=T.totalAnswered;
+  if(T.streak>=3){
+    streakEl.classList.remove('hidden');
+    streakEl.textContent=`🔥 ${T.streak}`;
+  } else {
+    streakEl.classList.add('hidden');
+  }
+}
+
+function ccExpired(){
+  ccStop();
+  if(T.phase!=='pending') return;
+  // Bank hit zero mid-question — treat as session end
+  T.phase='answered';
+  // Flash the time display
+  const timeEl=document.getElementById('cc-time-display');
+  timeEl.textContent='0:00';
+  timeEl.style.animation='none';
+  // Small delay so student sees the zero, then report
+  setTimeout(()=>showReport(), 1200);
+}
+
+function ccPauseTick(){
+  // Call when answer committed — clock stops draining until next question
+  CC._lastTick=null;
+}
+
+function ccResumeTick(){
+  CC._lastTick=performance.now();
+}
+
+
+function trToggle(which){
+  if(which==='timed'){
+    T.timedMode=!T.timedMode;
+    document.getElementById('toggle-timed').classList.toggle('on',T.timedMode);
+  } else if(which==='other'){
+    T.includeOther=!T.includeOther;
+    document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
+  }
+}
+
+// ── TIMER ───────────────────────────────────────────────
+function startTimer(){
+  if(!T.timedMode) return;
+  T._timerRemaining=T.timerSeconds;
+  const bar=document.getElementById('tr-timer-bar');
+  const label=document.getElementById('tr-timer-label');
+  const wrap=document.getElementById('tr-timer-wrap');
+  wrap.style.display='block';
+  label.style.display='block';
+  // Force full width first (no transition) then animate down
+  bar.style.transition='none';
+  bar.style.width='100%';
+  bar.classList.remove('urgent');
+  label.classList.remove('urgent');
+  label.textContent=T.timerSeconds+'s';
+  // Trigger reflow then start transition
+  void bar.offsetWidth;
+  bar.style.transition='width 1s linear';
+
+  T._timerInterval=setInterval(()=>{
+    T._timerRemaining--;
+    const pct=Math.max(0,(T._timerRemaining/T.timerSeconds)*100);
+    bar.style.width=pct+'%';
+    label.textContent=T._timerRemaining+'s';
+    const urgent=T._timerRemaining<=3;
+    bar.classList.toggle('urgent',urgent);
+    label.classList.toggle('urgent',urgent);
+    if(T._timerRemaining<=0){
+      stopTimer();
+      if(T.phase==='pending') timeExpired();
+    }
+  },1000);
+}
+
+function stopTimer(){
+  clearInterval(T._timerInterval);
+  T._timerInterval=null;
+}
+
+function hideTimer(){
+  stopTimer();
+  document.getElementById('tr-timer-wrap').style.display='none';
+  document.getElementById('tr-timer-label').style.display='none';
+}
+
+function timeExpired(){
+  // Auto-submit as a miss — use a sentinel key that maps to no cell
+  // Show expiry flash then advance
+  T.phase='answered';
+  T.totalAnswered++;
+  T.streak=0;
+  const correctCell=T._correctCell;
+  T.log.push({
+    rec:T._currentRec, isCorrect:false,
+    chosenKey:'⏱', chosenName:'TIMEOUT',
+    correctKey:correctCell?.key||'?', correctName:T._correctLabel,
+  });
+  const flash=document.getElementById('tr-flash');
+  flash.innerHTML=`<div class="tr-flash-label" style="font-size:28px">⏱</div>`;
+  flash.className='tr-flash-overlay show wrong';
+  document.getElementById('tr-key-bar-hint').innerHTML=
+    `<span style="color:var(--red);font-weight:700">⏱ Time's up</span> &nbsp;·&nbsp; correct: <strong>${esc(correctCell?correctCell.short:'?')}</strong>`;
+  document.getElementById('tr-key-display').innerHTML=
+    `<span style="color:var(--text4);font-size:11px">no answer</span>
+     <span style="color:var(--text4);margin:0 4px;font-size:12px">→</span>
+     <span class="tr-key-chip correct-key">${esc(correctCell?.key||'?')}</span>`;
+  flashKeypad(T._correctLabel,'correct');
+  document.getElementById('tr-next-btn').classList.remove('hidden');
+  setEnterKeyActive(true);
+  updateHUD();
+  buildWrongPanel(T._currentRec,'TIMEOUT',T._correctLabel);
+}
+
+
+function showTrainerConfig(){
+  document.getElementById('tr-config-screen').classList.remove('hidden');
+  document.getElementById('tr-session-screen').classList.add('hidden');
+  document.getElementById('tr-report-screen').classList.add('hidden');
+  hideTimer(); ccStop();
+  document.getElementById('cc-bank').classList.add('hidden');
+  // Sync toggle visual state to T
+  document.getElementById('toggle-timed').classList.toggle('on',T.timedMode);
+  document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
+  buildKeybindRef();
+}
+
+function buildKeybindRef(){
+  const el=document.getElementById('tr-keybind-ref');
+  el.innerHTML=CELLS.map(c=>`
+    <div class="tr-kb-row">
+      <span class="tr-kb-key">${esc(c.key)}</span>
+      <span class="tr-kb-name">${esc(c.short)}</span>
+    </div>`).join('');
+}
+
+function trSelectCount(btn){
+  document.querySelectorAll('.tr-count-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const n=parseInt(btn.dataset.n);
+  T.sessionCount=isNaN(n)?0:n; // -1 = chess clock, 0 = endless, N = fixed
+}
+
+// ── START SESSION ──────────────────────────────────────
+// ── WEIGHTED POOL BUILDER ──────────────────────────────
+// Knuth's algorithm: exact Poisson sample for integer lambda.
+// Variance == mean, so rare classes breathe more than common ones.
+function poissonSample(lambda){
+  const L = Math.exp(-lambda);
+  let k = 0, p = 1;
+  do { k++; p *= Math.random(); } while(p > L);
+  return k - 1;
+}
+
+// Returns a shuffled array of records sampled according to TRAIN_FREQ weights.
+// Draw count per class = max(1, Poisson(weight)), capped by atlas size.
+// Classes with weight 0 are excluded unless includeOther overrides OTHER.
+function buildWeightedQueue(){
+  // Bucket approved+imaged records by label
+  const buckets = {};
+  // S.records contains only non-aberration cells; aberrationRecords are never trained
+  Object.values(S.records).forEach(r=>{
+    
+    const lbl = effectiveLabel(r);
+    if(!lbl) return;
+    if(!buckets[lbl]) buckets[lbl] = [];
+    buckets[lbl].push(r);
+  });
+
+  const queue = [];
+  CELLS.forEach(cell=>{
+    const lbl = cell.name;
+    let weight = TRAIN_FREQ[lbl] ?? 0;
+
+    // OTHER: respect the opt-in toggle; use a fixed weight of 5 when enabled
+    if(lbl === 'OTHER'){
+      if(!T.includeOther) return;
+      weight = 5;
+    }
+    // OTHER LYMP: always excluded from training
+    if(lbl === 'OTHER LYMP') return;
+    if(weight === 0) return;
+
+    const bucket = buckets[lbl];
+    if(!bucket || !bucket.length) return; // skip silently if no images
+
+    // Sample draw count from Poisson(weight), floor at 1, cap at bucket size
+    const rawDraw = poissonSample(weight);
+    const drawCount = Math.min(bucket.length, Math.max(1, rawDraw));
+
+    // Shuffle bucket and take drawCount items
+    const shuffled = [...bucket].sort(()=>Math.random()-.5);
+    for(let i = 0; i < drawCount; i++) queue.push(shuffled[i % shuffled.length]);
+  });
+
+  // Final shuffle so cell types are interleaved
+  return queue.sort(()=>Math.random()-.5);
+}
+
+function startTrainer(){
+  const q = buildWeightedQueue();
+  if(!q.length){toast('⚠ No cells available for training.');return;}
+  T.pool = q;             // pool = one weighted cycle worth of records
+  T.totalAnswered=0; T.correct=0; T.streak=0; T.log=[];
+  T.cycleNum=1;
+  T.queue=[...q];         // queue is consumed; rebuilt from buildWeightedQueue on exhaustion
+  T.phase='idle';
+
+  document.getElementById('tr-config-screen').classList.add('hidden');
+  document.getElementById('tr-report-screen').classList.add('hidden');
+  document.getElementById('tr-session-screen').classList.remove('hidden');
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+  // Hide chess clock bank unless in CC mode
+  if(!ccIsActive()) document.getElementById('cc-bank').classList.add('hidden');
+  buildKeypad();
+  if(ccIsActive()) ccStart();
+  showQuestion();
+}
+
+function shuffle(arr){return arr.sort(()=>Math.random()-.5);}
+
+// ── SHOW QUESTION ──────────────────────────────────────
+function showQuestion(){
+  // Endless / chess clock: rebuild weighted queue when exhausted
+  if(!T.queue.length){
+    T.cycleNum++;
+    T.queue=buildWeightedQueue();
+    T.pool=T.queue; // keep pool in sync so HUD cycle count is correct
+  }
+  // Fixed: end when total answered reaches limit
+  if(T.sessionCount>0&&T.totalAnswered>=T.sessionCount){showReport();return;}
+
+  T.phase='pending';
+
+  const rec=T.queue.shift();
+  T._currentRec=rec;
+  T._correctLabel=effectiveLabel(rec);
+  T._correctCell=CELLS.find(c=>c.name===T._correctLabel);
+
+  // Image — random orientation to prevent memorisation
+  const trImg=document.getElementById('tr-img');
+  trImg.src=getImageUrl(rec.filename);
+  applyRandomOrientation(trImg);
+
+  // Flash overlay — clear
+  const flash=document.getElementById('tr-flash');
+  flash.className='tr-flash-overlay'; flash.innerHTML='';
+
+  // Pending hint
+  document.getElementById('tr-pending-hint').style.display='block';
+
+  // Key bar — neutral state
+  document.getElementById('tr-key-bar-hint').textContent='Use classifier keyboard shortcuts to identify this cell';
+  document.getElementById('tr-key-display').innerHTML='';
+  document.getElementById('tr-next-btn').classList.add('hidden');
+  setEnterKeyActive(false);
+
+  // Wrong panel — hide
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+
+  // HUD — suppress in chess clock mode (cc-bank is the HUD)
+  if(!ccIsActive()) updateHUD();
+  else ccUpdateStreak();
+
+  // Timer — start if timed mode on; chess clock manages its own countdown
+  if(T.timedMode && !ccIsActive()) startTimer(); else if(!ccIsActive()) hideTimer();
+  // Resume chess clock drain for this question
+  if(ccIsActive()) ccResumeTick();
+}
+
+function updateHUD(){
+  if(ccIsActive()) return; // CC mode uses cc-bank widget instead
+  const limit=T.sessionCount>0?T.sessionCount:T.pool.length*T.cycleNum;
+  const pct=T.sessionCount>0?Math.round((T.totalAnswered/T.sessionCount)*100):
+    Math.round(((T.totalAnswered%T.pool.length)/T.pool.length)*100);
+  document.getElementById('tr-hud-fill').style.width=pct+'%';
+  document.getElementById('tr-score').textContent=T.correct;
+  if(T.sessionCount>0){
+    document.getElementById('tr-hud-count').textContent=`${T.totalAnswered} / ${T.sessionCount}`;
+    document.getElementById('tr-hud-cycle').classList.add('hidden');
+  } else {
+    document.getElementById('tr-hud-count').textContent=`${T.totalAnswered%T.pool.length||T.pool.length} / ${T.pool.length}`;
+    const cycleEl=document.getElementById('tr-hud-cycle');
+    if(T.cycleNum>1){cycleEl.textContent=`Cycle ${T.cycleNum}`;cycleEl.classList.remove('hidden');}
+    else cycleEl.classList.add('hidden');
+  }
+  const streakEl=document.getElementById('tr-streak');
+  if(T.streak>=3){
+    streakEl.classList.remove('hidden');
+    document.getElementById('tr-streak-n').textContent=T.streak;
+  } else streakEl.classList.add('hidden');
+}
+
+// ── KEYBOARD ───────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+
+  if(e.key==='Escape'){
+    if(!document.getElementById('zoom-overlay').classList.contains('hidden')){closeZoom();return;}
+    if(!document.getElementById('detail-overlay').classList.contains('hidden')){closeDetail();return;}
+    return;
+  }
+
+  // Trainer mode — all keys routed here
+  if(!document.getElementById('trainer').classList.contains('hidden')){
+    e.preventDefault();
+    // NumLock detection: use getModifierState for a definitive answer on numpad keypresses.
+    // Show warning when NumLock is off; auto-hide it the moment it comes back on.
+    if(e.code&&e.code.startsWith('Numpad')){
+      const numLockOn=e.getModifierState('NumLock');
+      const warn=document.getElementById('numlock-warn');
+      if(warn){
+        if(numLockOn){
+          warn.classList.add('hidden');warn.classList.remove('visible');
+        } else {
+          warn.classList.remove('hidden');warn.classList.add('visible');
+        }
+      }
+    }
+    handleTrainerKey(e.key);
+    return;
+  }
+
+  // Browse mode — arrow nav + rotation in detail panel
+  if(!document.getElementById('detail-overlay').classList.contains('hidden')){
+    if(e.key==='ArrowLeft'){navDetail(-1);return;}
+    if(e.key==='ArrowRight'){navDetail(1);return;}
+    if(e.key.toLowerCase()==='r'){dpRotate(e.shiftKey?-90:90);return;}
+  }
+});
+
+// Numpad layout definition
+// Each entry: [gridArea, key, cellName, rowspan hint]
+// null cellName = inactive slot
+const NUMPAD_LAYOUT = [
+  // Row 0 — top row
+  {area:'numlock', key:'NumLock', name:null,           special:'numlock'},
+  {area:'div',     key:'/',       name:'PLASMA'},
+  {area:'star',    key:'*',       name:null,           special:'inactive'},
+  {area:'minus',   key:'-',       name:'BLAST'},
+  // Right column tall keys
+  {area:'plus',    key:'+',       name:'BASOPHIL'},
+  {area:'enter',   key:'Enter',   name:null,           special:'inactive'},
+  // Row 1
+  {area:'k7',      key:'7',       name:'METAMYELOCYTE'},
+  {area:'k8',      key:'8',       name:'MYELOCYTE'},
+  {area:'k9',      key:'9',       name:'PROMYELOCYTE'},
+  // Row 2
+  {area:'k4',      key:'4',       name:'EOSINOPHIL'},
+  {area:'k5',      key:'5',       name:'REACTIVE LYMP'},
+  {area:'k6',      key:'6',       name:'BAND'},
+  // Row 3
+  {area:'k1',      key:'1',       name:'MONOCYTE'},
+  {area:'k2',      key:'2',       name:'LYMPHOCYTE'},
+  {area:'k3',      key:'3',       name:'NEUTROPHIL'},
+  // Row 4
+  {area:'k0',      key:'0',       name:'OTHER'},
+  {area:'kdot',    key:'.',       name:'NRBC'},
+];
+// Keys not on the numpad at all
+const NUMPAD_ORPHANS = [
+  {key:'\\', name:'OTHER LYMP'},
+];
+
+function buildKeypad(){
+  const grid=document.getElementById('tr-keypad-grid');
+  grid.innerHTML='';
+
+  NUMPAD_LAYOUT.forEach(slot=>{
+    const btn=document.createElement('button');
+    const cellDef=slot.name?CELLS.find(c=>c.name===slot.name):null;
+    const displayKey=slot.key==='NumLock'?'NumLk':slot.key;
+    const displayLabel=cellDef?cellDef.short:(slot.special==='numlock'?'NumLock':'—');
+
+    btn.className='tr-key-btn kp-area-'+slot.area;
+
+    if(slot.special==='numlock'){
+      btn.classList.add('numlock-key');
+    } else if(slot.special==='inactive'||!slot.name){
+      btn.classList.add('inactive');
+    }
+
+    if(slot.name){
+      btn.id='kp-'+slot.name;
+      if(slot.name==='OTHER'&&!T.includeOther) btn.classList.add('dim');
+      btn.onclick=()=>handleTrainerKey(slot.key);
+    }
+    // Give inactive Enter its own id for the "press to continue" state
+    if(slot.key==='Enter') btn.id='kp-ENTER';
+
+    btn.innerHTML=`<span class="tr-key-glyph">${esc(displayKey)}</span><span class="tr-key-label">${esc(displayLabel)}</span>`;
+    grid.appendChild(btn);
+  });
+
+  // Orphan keys (not on numpad — rendered below the grid)
+  const orphanContainer=document.getElementById('tr-keypad-orphan-btns');
+  orphanContainer.innerHTML='';
+  NUMPAD_ORPHANS.forEach(slot=>{
+    const cellDef=CELLS.find(c=>c.name===slot.name);
+    if(!cellDef)return;
+    const btn=document.createElement('button');
+    btn.className='tr-key-btn';
+    btn.id='kp-'+slot.name;
+    btn.style.cssText='min-width:120px;display:inline-flex;flex-direction:row;gap:8px;padding:6px 12px';
+    btn.innerHTML=`<span class="tr-key-glyph">${esc(slot.key)}</span><span class="tr-key-label" style="text-align:left">${esc(cellDef.short)}</span>`;
+    btn.onclick=()=>handleTrainerKey(slot.key);
+    orphanContainer.appendChild(btn);
+  });
+
+  // NumLock detection
+  checkNumLock();
+}
+
+function checkNumLock(){
+  // Detection is now live per-keypress via getModifierState('NumLock').
+  // Warning shows/hides dynamically — no flags needed.
+}
+
+function setEnterKeyActive(active){
+  const btn=document.getElementById('kp-ENTER');
+  if(!btn)return;
+  if(active){
+    btn.classList.add('enter-active');
+    btn.querySelector('.tr-key-label').textContent='continue';
+    btn.onclick=()=>{ if(T.phase==='answered') nextQuestion(); };
+  } else {
+    btn.classList.remove('enter-active');
+    btn.querySelector('.tr-key-label').textContent='—';
+    btn.onclick=null;
+  }
+}
+
+function flashKeypad(cellName, result){
+  const btn=document.getElementById('kp-'+cellName);
+  if(!btn) return;
+  btn.classList.remove('flash-correct','flash-wrong');
+  void btn.offsetWidth; // reflow to restart animation
+  btn.classList.add(result==='correct'?'flash-correct':'flash-wrong');
+  setTimeout(()=>btn.classList.remove('flash-correct','flash-wrong'), 600);
+}
+
+// Single keypress — no confirmation. Same as labeler.
+function handleTrainerKey(key){
+  if(D.active){ handleDrillKey(key); return; }
+  if(key==='Enter'&&T.phase==='answered'){nextQuestion();return;}
+  if(T.phase!=='pending')return;
+  const cell=CELLS.find(c=>c.key===key);
+  if(!cell)return; // unmapped key — silent ignore
+  commitAnswer(key, cell.name);
+}
+
+// ── COMMIT ANSWER ──────────────────────────────────────
+function commitAnswer(chosenKey, chosenName){
+  T.phase='answered';
+  stopTimer(); // stop countdown the moment any key is pressed
+  T.totalAnswered++;
+  const correctCell=T._correctCell;
+  const isCorrect=chosenName===T._correctLabel;
+
+  if(isCorrect){T.correct++;T.streak++;}
+  else T.streak=0;
+
+  // Chess clock — pause drain and grant reward if correct
+  if(ccIsActive()){
+    ccPauseTick();
+    if(isCorrect) ccCorrect();
+    ccUpdateStreak();
+  }
+
+  // Flash the keypad button
+  flashKeypad(chosenName, isCorrect?'correct':'wrong');
+  if(!isCorrect) flashKeypad(T._correctLabel, 'correct'); // also highlight the right answer
+
+  T.log.push({
+    rec:T._currentRec, isCorrect,
+    chosenKey, chosenName,
+    correctKey:correctCell?correctCell.key:'?',
+    correctName:T._correctLabel,
+  });
+
+  // Flash
+  const flash=document.getElementById('tr-flash');
+  if(isCorrect){
+    flash.className='tr-flash-overlay show correct';
+    flash.innerHTML=`<div class="tr-flash-label">✓ ${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)}</div>`;
+    document.getElementById('tr-pending-hint').style.display='none';
+  } else {
+    flash.className='tr-flash-overlay show wrong';
+    flash.innerHTML=`<div class="tr-flash-label">✗ ${esc(CELL_DISPLAY[chosenName]||chosenName)}</div>`;
+    document.getElementById('tr-pending-hint').style.display='none';
+  }
+
+  // Key bar
+  const hint=document.getElementById('tr-key-bar-hint');
+  const display=document.getElementById('tr-key-display');
+  if(isCorrect){
+    hint.textContent='Correct!';
+    display.innerHTML=`<div class="tr-key-chip correct-key">${esc(chosenKey.toUpperCase())}</div>
+      <span style="font-size:11px;color:var(--green)">${esc(CELL_DISPLAY[chosenName]||chosenName)}</span>`;
+  } else {
+    hint.innerHTML='Wrong key:';
+    display.innerHTML=
+      `<div class="tr-key-chip pressed">${esc(chosenKey.toUpperCase())}</div>
+       <span style="font-size:11px;color:var(--text3);margin-right:6px">${esc(CELL_DISPLAY[chosenName]||chosenName)}</span>
+       <span style="font-size:11px;color:var(--text3);margin-right:4px">→ should be</span>
+       <div class="tr-key-chip correct-key">${esc(correctCell?correctCell.key.toUpperCase():'?')}</div>
+       <span style="font-size:11px;color:var(--green)">${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)}</span>`;
+  }
+
+  // Next button + Enter key activation
+  document.getElementById('tr-next-btn').classList.remove('hidden');
+  if(!isCorrect) setEnterKeyActive(true);
+  updateHUD();
+
+  // Wrong panel
+  if(!isCorrect){
+    buildWrongPanel(T._currentRec, chosenName, T._correctLabel);
+  }
+
+  // Auto-advance on correct after 900ms
+  if(isCorrect) setTimeout(()=>{if(T.phase==='answered')nextQuestion();},900);
+}
+
+// ── WRONG PANEL ────────────────────────────────────────
+function buildWrongPanel(currentRec, chosenName, correctName){
+  const panel=document.getElementById('tr-wrong-panel');
+
+  document.getElementById('tr-wrong-header').textContent=
+    `Study: ${esc(CELL_DISPLAY[chosenName]||chosenName)} vs ${esc(CELL_DISPLAY[correctName]||correctName)}`;
+  document.getElementById('wrong-cell-name').textContent=CELL_DISPLAY[chosenName]||chosenName;
+  document.getElementById('correct-cell-name').textContent=CELL_DISPLAY[correctName]||correctName;
+
+  // Examples of the wrong cell (what they pressed)
+  const wrongPool=Object.values(S.records)
+    .filter(r=>effectiveLabel(r)===chosenName&&r.filename!==currentRec.filename)
+    .sort(()=>Math.random()-.5).slice(0,4);
+  document.getElementById('wrong-examples').innerHTML=wrongPool.map(r=>
+    `<div class="tr-wrong-thumb wrong-border" onclick="browseCell('${esc(r.filename)}')" title="${esc(r.filename)}">
+       <img src="${getImageUrl(r.filename)}" loading="lazy" alt="" />
+     </div>`).join('')||'<div style="font-size:11px;color:var(--text4);padding:4px">No other examples in atlas</div>';
+
+  // Examples of the correct cell (the right answer)
+  const correctPool=Object.values(S.records)
+    .filter(r=>effectiveLabel(r)===correctName&&r.filename!==currentRec.filename)
+    .sort(()=>Math.random()-.5).slice(0,4);
+  document.getElementById('correct-examples').innerHTML=correctPool.map(r=>
+    `<div class="tr-wrong-thumb correct-border" onclick="browseCell('${esc(r.filename)}')" title="${esc(r.filename)}">
+       <img src="${getImageUrl(r.filename)}" loading="lazy" alt="" />
+     </div>`).join('')||'<div style="font-size:11px;color:var(--text4);padding:4px">No other examples in atlas</div>';
+
+  // Commentary for correct cell type — find any record with path_commentary
+  const commentaryRec=Object.values(S.records)
+    .find(r=>effectiveLabel(r)===correctName&&r.path_commentary);
+  const commentaryEl=document.getElementById('correct-commentary');
+  if(commentaryRec&&commentaryRec.path_commentary){
+    commentaryEl.textContent=commentaryRec.path_commentary;
+    commentaryEl.classList.remove('hidden');
+  } else commentaryEl.classList.add('hidden');
+
+  // Action footer — Compare and Drill buttons
+  let actionFooter=panel.querySelector('.tr-wrong-compare');
+  if(!actionFooter){
+    actionFooter=document.createElement('div');
+    actionFooter.className='tr-wrong-compare';
+    actionFooter.style.cssText='padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    panel.appendChild(actionFooter);
+  }
+  actionFooter.innerHTML=`
+    <span style="flex:1">Study this confusion:</span>
+    <button onclick="startPairDrill('${esc(chosenName)}','${esc(correctName)}')"
+      style="padding:4px 13px;border-radius:20px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:var(--amber);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">
+      🎯 Drill this pair
+    </button>
+    <button onclick="setMode('compare',{leftType:'${esc(chosenName)}',rightType:'${esc(correctName)}'})"
+      style="padding:4px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">
+      ⇄ Compare
+    </button>`;
+
+  panel.classList.remove('hidden');
+}
+
+// ── PAIR DRILL ─────────────────────────────────────────
+const D = {
+  active: false,
+  typeA: '', typeB: '',
+  queue: [],
+  current: 0,
+  // Per-type tracking
+  a: { correct:0, total:0 },
+  b: { correct:0, total:0 },
+  log: [],           // {rec, correctLabel, chosenName, isCorrect}
+  savedSession: null, // snapshot of T state to restore after drill
+};
+
+function startPairDrill(typeA, typeB){
+  // Validate both types have cells
+  const poolA=Object.values(S.records).filter(r=>effectiveLabel(r)===typeA);
+  const poolB=Object.values(S.records).filter(r=>effectiveLabel(r)===typeB);
+  if(!poolA.length||!poolB.length){
+    toast(`⚠ Need approved cells for both types to drill`);return;
+  }
+
+  // Save current session state so we can resume after
+  D.savedSession={
+    phase:T.phase, totalAnswered:T.totalAnswered, correct:T.correct,
+    streak:T.streak, queue:[...T.queue], log:[...T.log],
+    currentRec:T._currentRec, correctLabel:T._correctLabel, correctCell:T._correctCell,
+  };
+
+  D.active=true; D.typeA=typeA; D.typeB=typeB;
+  D.a={correct:0,total:0}; D.b={correct:0,total:0}; D.log=[];
+
+  // Build interleaved queue — equal from each pool, max 20 each
+  const take=n=>([...n].sort(()=>Math.random()-.5).slice(0,Math.min(10,n.length)));
+  D.queue=[...take(poolA),...take(poolB)].sort(()=>Math.random()-.5);
+  D.current=0;
+
+  // UI — switch to drill mode
+  document.getElementById('tr-hud').classList.add('hidden');
+  document.getElementById('tr-drill-banner').classList.remove('hidden');
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+
+  const cellA=CELLS.find(c=>c.name===typeA), cellB=CELLS.find(c=>c.name===typeB);
+  document.getElementById('tr-drill-title').textContent=
+    `${CELL_DISPLAY[typeA]||typeA}  vs  ${CELL_DISPLAY[typeB]||typeB}`;
+  document.getElementById('drill-a-label').textContent=`${cellA?cellA.key:''} · ${CELL_DISPLAY[typeA]||typeA}`;
+  document.getElementById('drill-b-label').textContent=`${cellB?cellB.key:''} · ${CELL_DISPLAY[typeB]||typeB}`;
+  updateDrillSplit();
+
+  // Dim all keypad keys except the two drill keys
+  document.querySelectorAll('.tr-key-btn').forEach(btn=>{
+    const name=btn.id.replace('kp-','');
+    btn.classList.remove('dim','active-a','active-b');
+    if(name===typeA) btn.classList.add('active-a');
+    else if(name===typeB) btn.classList.add('active-b');
+    else btn.classList.add('dim');
+  });
+
+  T.phase='pending';
+  showDrillQuestion();
+}
+
+function showDrillQuestion(){
+  if(D.current>=D.queue.length){ showDrillReport(); return; }
+  const rec=D.queue[D.current];
+  T._currentRec=rec;
+  T._correctLabel=effectiveLabel(rec);
+  T._correctCell=CELLS.find(c=>c.name===T._correctLabel);
+  T.phase='pending';
+
+  // Reset card UI — random orientation on each drill image
+  const trImgD=document.getElementById('tr-img');
+  trImgD.src=getImageUrl(rec.filename);
+  applyRandomOrientation(trImgD);
+  const flash=document.getElementById('tr-flash');
+  flash.className='tr-flash-overlay'; flash.innerHTML='';
+  document.getElementById('tr-pending-hint').style.display='block';
+  document.getElementById('tr-key-bar-hint').textContent='Identify this cell';
+  document.getElementById('tr-key-display').innerHTML='';
+  document.getElementById('tr-next-btn').classList.add('hidden');
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+
+  updateDrillSplit();
+}
+
+function handleDrillKey(key){
+  if(T.phase==='answered'){
+    if(key==='Enter') nextDrillQuestion();
+    return;
+  }
+  if(T.phase!=='pending') return;
+  const cell=CELLS.find(c=>c.key===key);
+  if(!cell) return;
+  // Only accept the two drill types
+  if(cell.name!==D.typeA&&cell.name!==D.typeB) return;
+
+  const isCorrect=cell.name===T._correctLabel;
+  const correctCell=T._correctCell;
+
+  // Track per-type
+  if(T._correctLabel===D.typeA){ D.a.total++; if(isCorrect) D.a.correct++; }
+  else                          { D.b.total++; if(isCorrect) D.b.correct++; }
+  D.log.push({rec:T._currentRec, correctLabel:T._correctLabel, chosenName:cell.name, isCorrect});
+
+  // Flash overlay
+  const flash=document.getElementById('tr-flash');
+  flash.innerHTML=`<div class="tr-flash-label">${esc(cell.short)}</div>`;
+  flash.className='tr-flash-overlay show '+(isCorrect?'correct':'wrong');
+  document.getElementById('tr-pending-hint').style.display='none';
+
+  // Key bar
+  const hint=document.getElementById('tr-key-bar-hint');
+  const display=document.getElementById('tr-key-display');
+  if(isCorrect){
+    hint.innerHTML=`<span style="color:var(--green);font-weight:700">✓ ${esc(cell.short)}</span>`;
+    display.innerHTML=`<span class="tr-key-chip correct-key">${esc(key)}</span>`;
+  } else {
+    hint.innerHTML=`<span style="color:var(--red);font-weight:700">✗ ${esc(cell.short)}</span> &nbsp;·&nbsp; correct: <strong>${esc(correctCell?correctCell.short:'?')}</strong>`;
+    display.innerHTML=`<span class="tr-key-chip pressed">${esc(key)}</span><span style="color:var(--text4);margin:0 4px;font-size:12px">→</span><span class="tr-key-chip correct-key">${esc(correctCell?correctCell.key:'?')}</span>`;
+  }
+
+  // Keypad flash
+  flashKeypad(cell.name, isCorrect?'correct':'wrong');
+  if(!isCorrect) flashKeypad(T._correctLabel,'correct');
+
+  document.getElementById('tr-next-btn').classList.remove('hidden');
+  T.phase='answered';
+  updateDrillSplit();
+
+  if(isCorrect) setTimeout(()=>{ if(T.phase==='answered') nextDrillQuestion(); }, 900);
+}
+
+function nextDrillQuestion(){
+  D.current++;
+  showDrillQuestion();
+}
+
+function updateDrillSplit(){
+  const fmt=(s)=>`${s.correct}/${s.total}`;
+  document.getElementById('drill-a-score').textContent=fmt(D.a);
+  document.getElementById('drill-b-score').textContent=fmt(D.b);
+}
+
+function exitDrill(){
+  endDrillSession(false);
+}
+
+function endDrillSession(completed){
+  D.active=false;
+  // Restore keypad
+  document.querySelectorAll('.tr-key-btn').forEach(btn=>{
+    btn.classList.remove('dim','active-a','active-b');
+  });
+  // Restore HUD
+  document.getElementById('tr-hud').classList.remove('hidden');
+  document.getElementById('tr-drill-banner').classList.add('hidden');
+
+  if(completed) { showDrillReport(); return; }
+  // Exit without completing — resume session
+  resumeSession();
+}
+
+function resumeSession(){
+  if(!D.savedSession){ showTrainerConfig(); return; }
+  const ss=D.savedSession;
+  T.phase='pending'; T.totalAnswered=ss.totalAnswered;
+  T.correct=ss.correct; T.streak=ss.streak;
+  T.queue=ss.queue; T.log=ss.log;
+  T._currentRec=null; T._correctLabel=null; T._correctCell=null;
+  D.savedSession=null;
+
+  // Always restore card + keypad visibility and correct HUD state
+  // regardless of whether queue is exhausted — drill may have hidden these
+  document.getElementById('tr-card').classList.remove('hidden');
+  document.getElementById('tr-keypad').classList.remove('hidden');
+  document.getElementById('tr-hud').classList.remove('hidden');
+  document.getElementById('tr-drill-banner').classList.add('hidden');
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+  // Remove any drill report that may still be in the DOM
+  const oldReport=document.getElementById('tr-drill-report-el');
+  if(oldReport) oldReport.remove();
+
+  // Show next question if queue still has cells and session not complete
+  const sessionDone = T.sessionCount>0 && T.totalAnswered>=T.sessionCount;
+  if(T.queue.length && !sessionDone){
+    const rec=T.queue.shift();
+    T._currentRec=rec; T._correctLabel=effectiveLabel(rec);
+    T._correctCell=CELLS.find(c=>c.name===T._correctLabel);
+    const trImgR=document.getElementById('tr-img');
+    trImgR.src=getImageUrl(rec.filename);
+    applyRandomOrientation(trImgR);
+    const flash=document.getElementById('tr-flash');
+    flash.className='tr-flash-overlay'; flash.innerHTML='';
+    document.getElementById('tr-pending-hint').style.display='block';
+    document.getElementById('tr-key-bar-hint').textContent='Identify this cell';
+    document.getElementById('tr-key-display').innerHTML='';
+    document.getElementById('tr-next-btn').classList.add('hidden');
+    updateHUD();
+  } else {
+    // Queue exhausted or session complete — go straight to end report
+    showReport();
+  }
+}
+
+function showDrillReport(){
+  // Hide session card, show drill report
+  document.getElementById('tr-card').classList.add('hidden');
+  document.getElementById('tr-keypad').classList.add('hidden');
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+  document.getElementById('tr-drill-banner').classList.add('hidden');
+  document.getElementById('tr-hud').classList.add('hidden');
+
+  // Build report card dynamically
+  let report=document.getElementById('tr-drill-report-el');
+  if(report) report.remove();
+  report=document.createElement('div');
+  report.id='tr-drill-report-el';
+  report.className='tr-drill-report';
+
+  const totalA=D.a.total, totalB=D.b.total;
+  const pctA=totalA?Math.round(D.a.correct/totalA*100):0;
+  const pctB=totalB?Math.round(D.b.correct/totalB*100):0;
+  const overall=D.log.length?Math.round(D.log.filter(e=>e.isCorrect).length/D.log.length*100):0;
+
+  const nameA=CELL_DISPLAY[D.typeA]||D.typeA, nameB=CELL_DISPLAY[D.typeB]||D.typeB;
+  const keyA=CELLS.find(c=>c.name===D.typeA)?.key||'?';
+  const keyB=CELLS.find(c=>c.name===D.typeB)?.key||'?';
+
+  report.innerHTML=`
+    <div class="tr-drill-report-header">
+      <div class="tr-drill-report-pair">${esc(nameA)} <span style="color:var(--text4);font-size:16px">vs</span> ${esc(nameB)}</div>
+      <div class="tr-bias-bars">
+        <div class="tr-bias-col">
+          <div class="tr-bias-name"><span style="font-family:'DM Mono',monospace;color:var(--accent)">${esc(keyA)}</span> &nbsp;${esc(nameA)}</div>
+          <div class="tr-bias-bar-wrap"><div class="tr-bias-bar a-bar" style="width:${pctA}%"></div></div>
+          <div class="tr-bias-stat"><strong>${D.a.correct}/${totalA}</strong> correct &nbsp;·&nbsp; ${pctA}%</div>
+        </div>
+        <div class="tr-bias-col">
+          <div class="tr-bias-name"><span style="font-family:'DM Mono',monospace;color:var(--amber)">${esc(keyB)}</span> &nbsp;${esc(nameB)}</div>
+          <div class="tr-bias-bar-wrap"><div class="tr-bias-bar b-bar" style="width:${pctB}%"></div></div>
+          <div class="tr-bias-stat"><strong>${D.b.correct}/${totalB}</strong> correct &nbsp;·&nbsp; ${pctB}%</div>
+        </div>
+      </div>
+      ${getBiasSummary(nameA,nameB,pctA,pctB)}
+    </div>
+    <div class="tr-drill-report-body" id="drill-report-body"></div>
+    <div class="tr-drill-report-footer">
+      <button class="tr-report-btn" onclick="drillAgain()">🎯 Drill Again</button>
+      <button class="tr-report-btn primary" onclick="closeDrillReport()">Resume Session →</button>
+    </div>`;
+
+  document.getElementById('tr-session-screen').appendChild(report);
+
+  // Per-cell log
+  const body=document.getElementById('drill-report-body');
+  D.log.forEach(entry=>{
+    const row=document.createElement('div');
+    row.className='tr-report-row';
+    const chosenCell=CELLS.find(c=>c.name===entry.chosenName);
+    const correctCell=CELLS.find(c=>c.name===entry.correctLabel);
+    row.innerHTML=`
+      <img class="tr-report-thumb" src="${getImageUrl(entry.rec.filename)}" alt="" />
+      <div class="tr-report-info">
+        <div class="${entry.isCorrect?'tr-report-correct-lbl':'tr-report-wrong-lbl'}">
+          ${entry.isCorrect?'✓':'✗'} ${esc(CELL_DISPLAY[entry.correctLabel]||entry.correctLabel)}
+        </div>
+        <div class="tr-report-answer">
+          ${entry.isCorrect
+            ? `key <span class="tr-report-key">${esc(correctCell?.key||'?')}</span>`
+            : `pressed <span class="tr-report-key">${esc(chosenCell?.key||'?')}</span> (${esc(CELL_DISPLAY[entry.chosenName]||entry.chosenName)}) → correct: <span class="tr-report-key">${esc(correctCell?.key||'?')}</span>`
+          }
+        </div>
+      </div>`;
+    row.style.cursor='pointer';
+    row.onclick=()=>browseCell(entry.rec.filename);
+    body.appendChild(row);
+  });
+}
+
+function getBiasSummary(nameA,nameB,pctA,pctB){
+  const diff=Math.abs(pctA-pctB);
+  if(diff<15) return `<div style="margin-top:10px;font-size:12px;color:var(--green)">✓ Balanced accuracy — no strong bias detected.</div>`;
+  const weaker=pctA<pctB?nameA:nameB;
+  return `<div style="margin-top:10px;font-size:12px;color:var(--amber)">⚠ You're significantly weaker on <strong>${esc(weaker)}</strong>. Focus your next drill there.</div>`;
+}
+
+function drillAgain(){
+  const el=document.getElementById('tr-drill-report-el');
+  if(el) el.remove();
+  document.getElementById('tr-card').classList.remove('hidden');
+  document.getElementById('tr-keypad').classList.remove('hidden');
+  document.getElementById('tr-drill-banner').classList.remove('hidden');
+  document.getElementById('tr-hud').classList.add('hidden');
+  startPairDrill(D.typeA, D.typeB);
+}
+
+function closeDrillReport(){
+  const el=document.getElementById('tr-drill-report-el');
+  if(el) el.remove();
+  document.getElementById('tr-card').classList.remove('hidden');
+  document.getElementById('tr-keypad').classList.remove('hidden');
+  D.active=false;
+  document.querySelectorAll('.tr-key-btn').forEach(b=>b.classList.remove('dim','active-a','active-b'));
+  resumeSession();
+}
+
+// ── BROWSE CELL ─────────────────────────────────────────
+function browseCell(filename){
+  setMode('browse');
+  const lbl=effectiveLabel(S.records[filename]);
+  setView(lbl);
+  setTimeout(()=>openDetail(filename),80);
+}
+
+function nextQuestion(){
+  stopTimer();
+  T.phase='idle';
+  document.getElementById('tr-wrong-panel').classList.add('hidden');
+  showQuestion();
+}
+// ── END REPORT ─────────────────────────────────────────
+function showReport(){
+  ccStop(); stopTimer();
+  document.getElementById('cc-bank').classList.add('hidden');
+  document.getElementById('tr-session-screen').classList.add('hidden');
+  document.getElementById('tr-report-screen').classList.remove('hidden');
+
+  const total=T.log.length;
+  const correct=T.log.filter(e=>e.isCorrect).length;
+  const pct=total?Math.round((correct/total)*100):0;
+  const grade=pct>=90?'🏆':pct>=75?'⭐':pct>=60?'📈':'📚';
+  document.getElementById('tr-report-grade').textContent=grade;
+  document.getElementById('tr-report-pct').textContent=`${correct} / ${total} correct — ${pct}%`;
+  // Chess clock — add survived time to report subtitle
+  let flavour=pct>=90?'Excellent. Muscle memory is solid.':
+    pct>=75?'Good session. Review the missed cells below.':
+    pct>=60?'Keep at it — focus on the wrong-key errors.':
+    'More practice needed. Browse the atlas between sessions.';
+  if(ccIsActive()){
+    const survived=total;
+    const best=survived>=300?'Elite run.':survived>=100?'Strong performance.':survived>=50?'Solid effort.':'Keep practising.';
+    flavour=`♟ Chess Clock — ${survived} cells before the bank ran out. ${best} ${flavour}`;
+  }
+  document.getElementById('tr-report-sub').textContent=flavour;
+
+  const body=document.getElementById('tr-report-body');body.innerHTML='';
+  T.log.forEach(entry=>{
+    const row=document.createElement('div');row.className='tr-report-row';
+    row.innerHTML=`
+      <img class="tr-report-thumb" src="${getImageUrl(entry.rec.filename)}" alt="" />
+      <div class="tr-report-info">
+        <div class="${entry.isCorrect?'tr-report-correct-lbl':'tr-report-wrong-lbl'}">
+          ${entry.isCorrect?'✓ Correct':'✗ Incorrect'}
+        </div>
+        <div class="tr-report-answer">
+          ${entry.isCorrect
+            ? `<span class="tr-report-key">${esc(entry.correctKey.toUpperCase())}</span> ${esc(CELL_DISPLAY[entry.correctName]||entry.correctName)}`
+            : `Pressed <span class="tr-report-key">${esc(entry.chosenKey.toUpperCase())}</span> ${esc(CELL_DISPLAY[entry.chosenName]||entry.chosenName)}
+               &nbsp;→&nbsp; should be <span class="tr-report-key">${esc(entry.correctKey.toUpperCase())}</span> ${esc(CELL_DISPLAY[entry.correctName]||entry.correctName)}`
+          }
+        </div>
+      </div>`;
+    row.title='Browse this cell';
+    row.onclick=()=>browseCell(entry.rec.filename);
+    body.appendChild(row);
+  });
+}
+
+// ── UTILS ──────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,ms=2800){
+  const d=document.createElement('div');d.className='toast';d.textContent=msg;
+  document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),ms);
+}
+</script>
+</body>
+</html>
