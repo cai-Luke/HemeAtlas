@@ -473,6 +473,19 @@
   .tr-timer-label{position:absolute;top:8px;right:10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text3);opacity:.7;pointer-events:none}
   .tr-timer-label.urgent{color:var(--red);opacity:1}
 
+  /* ── BEGINNER KEYPAD ── */
+  .tr-beginner-keypad{width:100%;max-width:700px;margin-top:10px;flex-shrink:0}
+  .tr-beg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+  .tr-beg-btn{padding:14px 8px 10px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;user-select:none;font-family:'DM Sans',sans-serif;width:100%}
+  .tr-beg-btn:hover{border-color:var(--accent);background:var(--surface3);transform:translateY(-1px);box-shadow:0 4px 10px rgba(124,158,248,.15)}
+  .tr-beg-btn .beg-key{font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--accent);line-height:1}
+  .tr-beg-btn .beg-label{font-size:10px;font-weight:600;color:var(--text3);text-align:center;line-height:1.3}
+  .tr-beg-btn.not-these{border-style:dashed;border-color:var(--text3)}
+  .tr-beg-btn.not-these .beg-key{color:var(--text2)}
+  .tr-beg-btn.not-these:hover{border-color:var(--text);border-style:dashed;background:var(--surface3)}
+  .tr-beg-btn.flash-correct{border-color:var(--green);background:var(--green-light);animation:flash-correct .5s ease forwards}
+  .tr-beg-btn.flash-wrong{border-color:var(--red);background:rgba(248,113,113,.15);animation:flash-wrong .5s ease forwards}
+
   /* ── TAG POSTER ── */
   .tag-ref-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin:4px 0;border-radius:var(--radius);border:1.5px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:left}
   .tag-ref-btn:hover{background:var(--accent);color:#fff}
@@ -659,6 +672,13 @@
               </div>
               <div class="tr-switch"></div>
             </div>
+            <div class="tr-toggle-row" id="toggle-beginner" onclick="trToggle('beginner')">
+              <div class="tr-toggle-text">
+                <div class="tr-toggle-name">🎓 Beginner Mode — 5-Part Diff</div>
+                <div class="tr-toggle-desc">Focus on the 5 basic WBC types (neutrophil, lymphocyte, monocyte, eosinophil, basophil) with ~10% surprise cells. Replaces the full keyboard with a simple 6-button panel.</div>
+              </div>
+              <div class="tr-switch"></div>
+            </div>
           </div>
         </div>
         <div>
@@ -741,6 +761,7 @@
           <div id="tr-keypad-orphan-btns"></div>
         </div>
       </div>
+      <div class="tr-beginner-keypad hidden" id="tr-beginner-keypad"></div>
       <!-- Wrong answer panel — shown below card on incorrect -->
       <div class="tr-wrong-panel hidden" id="tr-wrong-panel">
         <div class="tr-wrong-header" id="tr-wrong-header"></div>
@@ -1541,11 +1562,13 @@ let T = {
   sessionCount: 100,  // 0 = endless, -1 = chess clock
   includeOther: false,// opt-in: include OTHER category
   timedMode: false,   // opt-in: 10-second countdown per cell
+  beginnerMode: false,// opt-in: 5-part diff with curveballs
   timerSeconds: 10,
   _timerInterval: null,
   _timerRemaining: 0,
   pool: [],           // all eligible recs
   queue: [],          // current cycle queue
+  curveballPool: [],  // beginner mode: records from the other 9 types
   cycleNum: 1,
   totalAnswered: 0,
   correct: 0,
@@ -1555,6 +1578,7 @@ let T = {
   _currentRec: null,
   _correctLabel: null,
   _correctCell: null,
+  _isCurveball: false,// beginner mode: current question is a curveball
 };
 
 // ── CHESS CLOCK ─────────────────────────────────────────
@@ -1671,6 +1695,11 @@ function trToggle(which){
   } else if(which==='other'){
     T.includeOther=!T.includeOther;
     document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
+  } else if(which==='beginner'){
+    T.beginnerMode=!T.beginnerMode;
+    document.getElementById('toggle-beginner').classList.toggle('on',T.beginnerMode);
+    // If a session is running, restart with the new mode
+    if(T.phase==='pending'||T.phase==='answered') startTrainer();
   }
 }
 
@@ -1757,6 +1786,7 @@ function showTrainerConfig(){
   // Sync toggle visual state to T
   document.getElementById('toggle-timed').classList.toggle('on',T.timedMode);
   document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
+  document.getElementById('toggle-beginner').classList.toggle('on',T.beginnerMode);
   buildKeybindRef();
 }
 
@@ -1790,12 +1820,14 @@ function poissonSample(lambda){
 // Returns a shuffled array of records sampled according to TRAIN_FREQ weights.
 // Draw count per class = max(1, Poisson(weight)), capped by atlas size.
 // Classes with weight 0 are excluded unless includeOther overrides OTHER.
+const BEGINNER_TYPES=['NEUTROPHIL','LYMPHOCYTE','MONOCYTE','EOSINOPHIL','BASOPHIL'];
+const CURVEBALL_TYPES=['BAND','REACTIVE LYMP','BLAST','PROMYELOCYTE','MYELOCYTE','METAMYELOCYTE','NRBC','PLASMA','OTHER'];
+
 function buildWeightedQueue(){
   // Bucket approved+imaged records by label
   const buckets = {};
   // S.records contains only non-aberration cells; aberrationRecords are never trained
   Object.values(S.records).forEach(r=>{
-    
     const lbl = effectiveLabel(r);
     if(!lbl) return;
     if(!buckets[lbl]) buckets[lbl] = [];
@@ -1807,6 +1839,8 @@ function buildWeightedQueue(){
     const lbl = cell.name;
     let weight = TRAIN_FREQ[lbl] ?? 0;
 
+    // Beginner mode: only the 5 basic types in the main queue
+    if(T.beginnerMode && !BEGINNER_TYPES.includes(lbl)) return;
     // OTHER: respect the opt-in toggle; use a fixed weight of 5 when enabled
     if(lbl === 'OTHER'){
       if(!T.includeOther) return;
@@ -1840,6 +1874,10 @@ function startTrainer(){
   T.cycleNum=1;
   T.queue=[...q];         // queue is consumed; rebuilt from buildWeightedQueue on exhaustion
   T.phase='idle';
+  // Build curveball pool for beginner mode (other 9 cell types)
+  T.curveballPool=T.beginnerMode
+    ? Object.values(S.records).filter(r=>CURVEBALL_TYPES.includes(effectiveLabel(r)))
+    : [];
 
   document.getElementById('tr-config-screen').classList.add('hidden');
   document.getElementById('tr-report-screen').classList.add('hidden');
@@ -1866,8 +1904,15 @@ function showQuestion(){
   if(T.sessionCount>0&&T.totalAnswered>=T.sessionCount){showReport();return;}
 
   T.phase='pending';
+  T._isCurveball=false;
 
-  const rec=T.queue.shift();
+  let rec;
+  if(T.beginnerMode && T.curveballPool.length && Math.random()<0.1){
+    T._isCurveball=true;
+    rec=T.curveballPool[Math.floor(Math.random()*T.curveballPool.length)];
+  } else {
+    rec=T.queue.shift();
+  }
   T._currentRec=rec;
   T._correctLabel=effectiveLabel(rec);
   T._correctCell=CELLS.find(c=>c.name===T._correctLabel);
@@ -1998,6 +2043,38 @@ const NUMPAD_ORPHANS = [
 ];
 
 function buildKeypad(){
+  const fullPad=document.getElementById('tr-keypad');
+  const begPad=document.getElementById('tr-beginner-keypad');
+  if(T.beginnerMode){
+    fullPad.classList.add('hidden');
+    begPad.classList.remove('hidden');
+    begPad.innerHTML='';
+    const mainGrid=document.createElement('div');mainGrid.className='tr-beg-grid';
+    const begSlots=[
+      {key:'3',name:'NEUTROPHIL',short:'Seg Neutrophil'},
+      {key:'2',name:'LYMPHOCYTE',short:'Lymphocyte'},
+      {key:'1',name:'MONOCYTE',short:'Monocyte'},
+      {key:'4',name:'EOSINOPHIL',short:'Eosinophil'},
+      {key:'+',name:'BASOPHIL',short:'Basophil'},
+    ];
+    begSlots.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='tr-beg-btn';btn.id='kp-'+s.name;
+      btn.innerHTML=`<span class="beg-key">${esc(s.key)}</span><span class="beg-label">${esc(s.short)}</span>`;
+      btn.onclick=()=>handleTrainerKey(s.key);
+      mainGrid.appendChild(btn);
+    });
+    begPad.appendChild(mainGrid);
+    const ntBtn=document.createElement('button');
+    ntBtn.className='tr-beg-btn not-these';ntBtn.id='kp-NOT_THESE';
+    ntBtn.style.cssText='width:100%';
+    ntBtn.innerHTML='<span class="beg-key">N</span><span class="beg-label">Not one of these</span>';
+    ntBtn.onclick=()=>handleTrainerKey('n');
+    begPad.appendChild(ntBtn);
+    return;
+  }
+  fullPad.classList.remove('hidden');
+  begPad.classList.add('hidden');
   const grid=document.getElementById('tr-keypad-grid');
   grid.innerHTML='';
 
@@ -2079,6 +2156,11 @@ function handleTrainerKey(key){
   if(D.active){ handleDrillKey(key); return; }
   if(key==='Enter'&&T.phase==='answered'){nextQuestion();return;}
   if(T.phase!=='pending')return;
+  if(T.beginnerMode){
+    if(key==='n'||key==='N'){commitAnswer('N','NOT_THESE');return;}
+    // only the 5 basic-type keys are active in beginner mode
+    if(!['1','2','3','4','+'].includes(key))return;
+  }
   const cell=CELLS.find(c=>c.key===key);
   if(!cell)return; // unmapped key — silent ignore
   commitAnswer(key, cell.name);
@@ -2090,7 +2172,8 @@ function commitAnswer(chosenKey, chosenName){
   stopTimer(); // stop countdown the moment any key is pressed
   T.totalAnswered++;
   const correctCell=T._correctCell;
-  const isCorrect=chosenName===T._correctLabel;
+  // Curveball: correct answer is "Not one of these"; otherwise standard label match
+  const isCorrect=T._isCurveball ? chosenName==='NOT_THESE' : chosenName===T._correctLabel;
 
   if(isCorrect){T.correct++;T.streak++;}
   else T.streak=0;
@@ -2104,20 +2187,26 @@ function commitAnswer(chosenKey, chosenName){
 
   // Flash the keypad button
   flashKeypad(chosenName, isCorrect?'correct':'wrong');
-  if(!isCorrect) flashKeypad(T._correctLabel, 'correct'); // also highlight the right answer
+  if(!isCorrect){
+    // For curveballs highlight "Not one of these"; otherwise highlight the correct cell
+    flashKeypad(T._isCurveball?'NOT_THESE':T._correctLabel, 'correct');
+  }
 
   T.log.push({
     rec:T._currentRec, isCorrect,
     chosenKey, chosenName,
-    correctKey:correctCell?correctCell.key:'?',
-    correctName:T._correctLabel,
+    correctKey: T._isCurveball ? 'N' : (correctCell?correctCell.key:'?'),
+    correctName: T._isCurveball ? 'NOT_THESE ('+T._correctLabel+')' : T._correctLabel,
   });
 
-  // Flash
+  // Flash overlay
   const flash=document.getElementById('tr-flash');
   if(isCorrect){
+    const label=T._isCurveball
+      ? `Not one of these (${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)})`
+      : esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel);
     flash.className='tr-flash-overlay show correct';
-    flash.innerHTML=`<div class="tr-flash-label">✓ ${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)}</div>`;
+    flash.innerHTML=`<div class="tr-flash-label">✓ ${label}</div>`;
     document.getElementById('tr-pending-hint').style.display='none';
   } else {
     flash.className='tr-flash-overlay show wrong';
@@ -2129,9 +2218,20 @@ function commitAnswer(chosenKey, chosenName){
   const hint=document.getElementById('tr-key-bar-hint');
   const display=document.getElementById('tr-key-display');
   if(isCorrect){
+    const label=T._isCurveball
+      ? `Not one of these (${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)})`
+      : esc(CELL_DISPLAY[chosenName]||chosenName);
     hint.textContent='Correct!';
     display.innerHTML=`<div class="tr-key-chip correct-key">${esc(chosenKey.toUpperCase())}</div>
-      <span style="font-size:11px;color:var(--green)">${esc(CELL_DISPLAY[chosenName]||chosenName)}</span>`;
+      <span style="font-size:11px;color:var(--green)">${label}</span>`;
+  } else if(T._isCurveball){
+    hint.textContent='Wrong:';
+    display.innerHTML=
+      `<div class="tr-key-chip pressed">${esc(chosenKey.toUpperCase())}</div>
+       <span style="font-size:11px;color:var(--text3);margin-right:6px">${esc(CELL_DISPLAY[chosenName]||chosenName)}</span>
+       <span style="font-size:11px;color:var(--text3);margin-right:4px">→ correct:</span>
+       <div class="tr-key-chip correct-key">N</div>
+       <span style="font-size:11px;color:var(--green)">Not one of these — this is ${esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel)}</span>`;
   } else {
     hint.innerHTML='Wrong key:';
     display.innerHTML=
@@ -2556,6 +2656,7 @@ function showReport(){
     const best=survived>=300?'Elite run.':survived>=100?'Strong performance.':survived>=50?'Solid effort.':'Keep practising.';
     flavour=`♟ Chess Clock — ${survived} cells before the bank ran out. ${best} ${flavour}`;
   }
+  if(T.beginnerMode) flavour='🎓 Beginner Mode (5-Part Diff) — '+flavour;
   document.getElementById('tr-report-sub').textContent=flavour;
 
   const body=document.getElementById('tr-report-body');body.innerHTML='';
