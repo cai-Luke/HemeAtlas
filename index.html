@@ -473,6 +473,41 @@
   .tr-timer-label{position:absolute;top:8px;right:10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text3);opacity:.7;pointer-events:none}
   .tr-timer-label.urgent{color:var(--red);opacity:1}
 
+  /* ── TAG POSTER ── */
+  .tag-ref-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin:4px 0;border-radius:var(--radius);border:1.5px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:left}
+  .tag-ref-btn:hover{background:var(--accent);color:#fff}
+  .tag-ref-btn.active{background:var(--accent);color:#fff}
+  .poster-area{padding:16px 0;display:flex;flex-direction:column;gap:0}
+  .poster-back{display:flex;align-items:center;gap:10px;padding:0 0 14px}
+  .poster-back-btn{padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+  .poster-back-btn:hover{background:var(--surface2);color:var(--text)}
+  .poster-title{font-family:'Instrument Serif',serif;font-size:24px;color:var(--text);letter-spacing:-.3px}
+  .tag-group{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:8px}
+  .tag-group-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:var(--surface2);user-select:none;transition:background .12s}
+  .tag-group-header:hover{background:var(--surface3)}
+  .tag-group-header.open{background:var(--accent-dim)}
+  .tag-group-chevron{font-size:14px;color:var(--text3);transition:transform .2s;display:inline-block;font-style:normal}
+  .tag-group-header.open .tag-group-chevron{transform:rotate(90deg)}
+  .tag-group-name{flex:1;font-size:13px;font-weight:700;color:var(--text)}
+  .tag-group-header.open .tag-group-name{color:var(--accent)}
+  .tag-group-count{font-size:11px;color:var(--text3)}
+  .tag-group-body{display:none}
+  .tag-group-body.open{display:block}
+  .tag-row{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-top:1px solid var(--border);transition:background .12s}
+  .tag-row:hover{background:var(--surface2)}
+  .tag-row.expanded{background:var(--accent-dim)}
+  .tag-row-name{font-size:12px;font-weight:600;color:var(--text);flex:1;min-width:0}
+  .tag-row.expanded .tag-row-name{color:var(--accent)}
+  .tag-row-count{font-size:11px;color:var(--text3);white-space:nowrap}
+  .tag-row-thumbs{display:flex;gap:4px;flex-shrink:0}
+  .tag-thumb{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0;background:var(--surface2)}
+  .tag-inline-expand{background:var(--bg);border-top:1px solid var(--border);padding:12px}
+  .tag-inline-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+  .tag-inline-card{border-radius:var(--radius);overflow:hidden;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);transition:all .15s;position:relative}
+  .tag-inline-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(124,158,248,.15)}
+  .tag-inline-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .tag-empty{padding:20px 16px;font-size:12px;color:var(--text3);font-style:italic}
+
 </style>
 </head>
 <body>
@@ -518,6 +553,10 @@
       <div class="sb-divider" id="sb-ab-divider" style="display:none"></div>
       <div class="sb-section" id="sb-ab-section" style="display:none">Tag Gallery</div>
       <div class="sb-list" id="sb-aberration-list" style="flex:0 0 auto;max-height:200px"></div>
+      <div id="sb-tag-ref-wrap" style="display:none;padding:0 8px 8px">
+        <div class="sb-divider" style="margin:4px 0 8px"></div>
+        <button class="tag-ref-btn" id="tag-ref-btn" onclick="showTagPoster()">🏷 Tag Reference</button>
+      </div>
     </div>
     <div class="main" id="main">
       <div class="empty-state" id="empty-state">
@@ -532,6 +571,7 @@
         </div>
         <div class="cell-grid" id="cell-grid"></div>
       </div>
+      <div id="poster-area" class="poster-area hidden"></div>
     </div>
   </div>
 
@@ -991,6 +1031,8 @@ function buildAberrationSidebar(){
   const section=document.getElementById('sb-ab-section');
   if(divider)divider.style.display=hasTagged?'':'none';
   if(section)section.style.display=hasTagged?'':'none';
+  const refWrap=document.getElementById('sb-tag-ref-wrap');
+  if(refWrap)refWrap.style.display=hasTagged?'':'none';
   if(!hasTagged)return;
   // One entry per tag, sorted alphabetically
   Object.keys(tagCounts).sort().forEach(tag=>{
@@ -1003,6 +1045,9 @@ function buildAberrationSidebar(){
 
 function setView(key){
   S.currentView=key;S.searchQuery='';
+  hidePoster();
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('grid-area').classList.remove('hidden');
   document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
   let target;
   if(key==='all') target=document.querySelector('.sb-all');
@@ -1334,6 +1379,7 @@ function parseRow(row){
 // ── MODE TOGGLE ────────────────────────────────────────
 function setMode(mode,opts={}){
   const isBrowse=mode==='browse', isCompare=mode==='compare', isTrain=mode==='train';
+  hidePoster();
   document.getElementById('mode-browse').classList.toggle('active',isBrowse);
   document.getElementById('mode-compare').classList.toggle('active',isCompare);
   document.getElementById('mode-train').classList.toggle('active',isTrain);
@@ -2540,6 +2586,171 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function toast(msg,ms=2800){
   const d=document.createElement('div');d.className='toast';d.textContent=msg;
   document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),ms);
+}
+
+// ── TAG POSTER ─────────────────────────────────────────
+const TAG_GROUPS=[
+  {name:'Neutrophil Morphology',tags:['hypersegmentation','hypogranulation','hypergranulation','bilobular','botryoid nucleus','pelger huet','macropolycyte','dohle bodies']},
+  {name:'Inherited / Granulation Disorders',tags:['may hegglin','alder reilly','chediak higashi','pseudo chediak higashi']},
+  {name:'Blast Features',tags:['auer rods','pseudo auer rods','faggot cells','angel wings','cuplike','nucleoli']},
+  {name:'Lymphocyte Morphology',tags:['hairy cells','sezary','cleft nucleus','smudged','plasmacytoid','binuclear']},
+  {name:'Plasma Cell Features',tags:['mott cells','crystals','turtle shell','cryoglobulins']},
+  {name:'Monocyte & Cytoplasmic Features',tags:['vacuoles','erythrophagocytosis','basophilic granules','blue green inclusions']},
+  {name:'RBC & Other',tags:['agglutination','howell jolly like']},
+  {name:'Infectious / Parasitic',tags:['n meningitidis','c canimorsus','k pneumoniae','p falciparum','p vivax','hemozoin']},
+  {name:'Other',tags:['apoptosis','mitosis','pediatric']},
+];
+let _posterOpenGroups=new Set();
+let _posterExpandedTag=null;
+let _posterTagGridState={};
+
+function _recsForTag(tagLower){
+  const all=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
+  return all.filter(r=>(r.tags||'').split(',').map(t=>t.trim().toLowerCase()).includes(tagLower));
+}
+
+function showTagPoster(){
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('grid-area').classList.add('hidden');
+  document.getElementById('poster-area').classList.remove('hidden');
+  document.getElementById('tag-ref-btn').classList.add('active');
+  document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
+  buildTagPoster();
+}
+
+function hidePoster(){
+  document.getElementById('poster-area').classList.add('hidden');
+  const btn=document.getElementById('tag-ref-btn');if(btn)btn.classList.remove('active');
+  _posterExpandedTag=null;
+  _posterTagGridState={};
+}
+
+function buildTagPoster(){
+  const area=document.getElementById('poster-area');
+  area.innerHTML='';
+  // Back button + title row
+  const topRow=document.createElement('div');
+  topRow.className='poster-back';
+  topRow.innerHTML='<button class="poster-back-btn" onclick="leavePoster()">← Browse</button><span class="poster-title">Tag Reference</span>';
+  area.appendChild(topRow);
+  // Accordion groups
+  TAG_GROUPS.forEach((group,gi)=>{
+    const groupTotal=group.tags.reduce((sum,tag)=>sum+_recsForTag(tag).length,0);
+    const isOpen=_posterOpenGroups.has(gi);
+    const groupEl=document.createElement('div');
+    groupEl.className='tag-group';
+    groupEl.id='tg-'+gi;
+    const hdr=document.createElement('div');
+    hdr.className='tag-group-header'+(isOpen?' open':'');
+    hdr.innerHTML='<i class="tag-group-chevron">›</i><span class="tag-group-name">'+esc(group.name)+'</span><span class="tag-group-count">'+groupTotal+' images</span>';
+    hdr.onclick=()=>toggleTagGroup(gi);
+    const body=document.createElement('div');
+    body.className='tag-group-body'+(isOpen?' open':'');
+    body.id='tg-body-'+gi;
+    if(isOpen)_renderTagGroupBody(body,group);
+    groupEl.appendChild(hdr);
+    groupEl.appendChild(body);
+    area.appendChild(groupEl);
+  });
+}
+
+function toggleTagGroup(gi){
+  const hdr=document.querySelector('#tg-'+gi+' .tag-group-header');
+  const body=document.getElementById('tg-body-'+gi);
+  if(_posterOpenGroups.has(gi)){
+    _posterOpenGroups.delete(gi);
+    hdr.classList.remove('open');
+    body.classList.remove('open');
+    body.innerHTML='';
+  } else {
+    _posterOpenGroups.add(gi);
+    hdr.classList.add('open');
+    body.classList.add('open');
+    _renderTagGroupBody(body,TAG_GROUPS[gi]);
+  }
+}
+
+function _renderTagGroupBody(bodyEl,group){
+  bodyEl.innerHTML='';
+  group.tags.forEach(tag=>{
+    const recs=_recsForTag(tag);
+    if(!recs.length)return;
+    const isExpanded=_posterExpandedTag===tag;
+    const displayTag=tag.replace(/\b\w/g,c=>c.toUpperCase());
+    const row=document.createElement('div');
+    row.className='tag-row'+(isExpanded?' expanded':'');
+    const thumbsHtml=recs.slice(0,2).map(r=>'<img class="tag-thumb" src="'+getImageUrl(r.filename)+'" alt="" loading="lazy">').join('');
+    row.innerHTML='<span class="tag-row-name">'+esc(displayTag)+'</span><span class="tag-row-count">'+recs.length+'</span><div class="tag-row-thumbs">'+thumbsHtml+'</div>';
+    row.onclick=()=>toggleTagExpand(tag);
+    bodyEl.appendChild(row);
+    if(isExpanded){
+      const expandEl=document.createElement('div');
+      expandEl.className='tag-inline-expand';
+      _renderTagInlineGrid(expandEl,recs,tag);
+      bodyEl.appendChild(expandEl);
+    }
+  });
+}
+
+function toggleTagExpand(tag){
+  _posterExpandedTag=_posterExpandedTag===tag?null:tag;
+  const gi=TAG_GROUPS.findIndex(g=>g.tags.includes(tag));
+  if(gi>=0)_renderTagGroupBody(document.getElementById('tg-body-'+gi),TAG_GROUPS[gi]);
+}
+
+const _TAG_CHUNK=60;
+function _renderTagInlineGrid(container,recs,tag){
+  container.innerHTML='';
+  const grid=document.createElement('div');
+  grid.className='tag-inline-grid';
+  container.appendChild(grid);
+  const st={recs,cursor:0,obs:null};
+  _posterTagGridState[tag]=st;
+  _tagChunkAppend(grid,st);
+  _tagChunkObserve(grid,st,tag);
+}
+function _tagChunkAppend(grid,st){
+  const end=Math.min(st.cursor+_TAG_CHUNK,st.recs.length);
+  for(let i=st.cursor;i<end;i++){
+    const rec=st.recs[i];
+    const card=document.createElement('div');
+    card.className='tag-inline-card';
+    const img=document.createElement('img');
+    img.src=getImageUrl(rec.filename);img.alt='';img.loading='lazy';
+    card.appendChild(img);
+    card.onclick=()=>openDetail(rec.filename);
+    grid.appendChild(card);
+  }
+  st.cursor=end;
+}
+function _tagChunkObserve(grid,st,tag){
+  if(st.obs){st.obs.disconnect();st.obs=null;}
+  if(st.cursor>=st.recs.length)return;
+  const sentinel=document.createElement('div');
+  sentinel.className='grid-sentinel';
+  grid.appendChild(sentinel);
+  const obs=new IntersectionObserver(entries=>{
+    if(!entries[0].isIntersecting)return;
+    obs.disconnect();st.obs=null;sentinel.remove();
+    _tagChunkAppend(grid,st);
+    _tagChunkObserve(grid,st,tag);
+  },{rootMargin:'300px'});
+  obs.observe(sentinel);st.obs=obs;
+}
+
+function leavePoster(){
+  hidePoster();
+  if(S.currentView){
+    document.getElementById('grid-area').classList.remove('hidden');
+    document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
+    let target;
+    if(S.currentView==='all')target=document.querySelector('.sb-all');
+    else if(S.currentView.startsWith('abtag:'))target=document.getElementById('sb-abtag-'+S.currentView.slice(6));
+    else target=document.getElementById('sb-'+S.currentView);
+    if(target)target.classList.add('active');
+  } else {
+    document.getElementById('empty-state').classList.remove('hidden');
+  }
 }
 </script>
 </body>
