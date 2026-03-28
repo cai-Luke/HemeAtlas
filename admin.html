@@ -306,6 +306,33 @@
   .ap-user-row{display:flex;align-items:center;gap:10px;padding:10px 0}
   .ap-divider{height:1px;background:var(--border);margin:4px 0}
   .ap-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+  /* ── EXPORT MODAL ── */
+  .export-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px}
+  .export-panel{background:#ffffff;border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(0,0,0,.35);width:520px;max-width:calc(100vw - 40px);overflow:hidden;display:flex;flex-direction:column}
+  .export-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .export-title{font-size:16px;font-weight:700;flex:1}
+  .export-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+  .export-desc{font-size:13px;color:var(--text2);line-height:1.5}
+  .export-cmd-wrap{position:relative}
+  .export-cmd{font-family:'DM Mono',monospace;font-size:12px;background:var(--text);color:#e2e8f0;padding:14px 16px;border-radius:var(--radius);white-space:pre;line-height:1.7;overflow-x:auto;display:block}
+  .export-copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+  .export-copy-btn:hover{background:rgba(255,255,255,.22);color:#fff}
+  .export-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+
+  /* ── EXCLUDED SIDEBAR ── */
+  .sidebar-excl-header{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;transition:all .12s;border-left:3px solid transparent}
+  .sidebar-excl-header:hover{background:var(--surface2)}
+  .sidebar-excl-header.active{background:var(--red-light);border-left-color:var(--red)}
+  .sidebar-excl-header .si-label{flex:1;font-size:13px;font-weight:500;color:var(--text2)}
+  .sidebar-excl-header.active .si-label{color:var(--red);font-weight:600}
+  .sidebar-excl-header .si-count{font-size:11px;font-weight:700;color:var(--text3);background:var(--surface2);padding:1px 7px;border-radius:20px;min-width:24px;text-align:center}
+  .sidebar-excl-header.active .si-count{background:var(--red-light);color:var(--red)}
+  .sidebar-excl-sub{padding:4px 0 4px 12px}
+  .sidebar-excl-sub .sidebar-item{padding:5px 16px 5px 12px;font-size:12px}
+  .sidebar-excl-sub .sidebar-item.active{background:var(--red-light);border-left-color:var(--red)}
+  .sidebar-excl-sub .sidebar-item.active .si-label{color:var(--red)}
+  .sidebar-excl-sub .sidebar-item.active .si-count{background:var(--red-light);color:var(--red)}
 </style>
 </head>
 <body>
@@ -351,10 +378,6 @@
         <span class="si-label">✏ Corrected</span>
         <span class="si-count" id="sc-corrected">0</span>
       </div>
-      <div class="sidebar-item" data-view="excluded" onclick="setView('excluded')">
-        <span class="si-label">🚫 Excluded</span>
-        <span class="si-count" id="sc-excluded">0</span>
-      </div>
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
@@ -374,6 +397,7 @@
       <div class="sidebar-header">Cell Types</div>
       <div id="sidebar-cells"></div>
     </div>
+    <div id="sidebar-excluded-section"></div>
   </div>
 
   <!-- MAIN -->
@@ -466,6 +490,26 @@
       <label>Pathologist name</label>
       <input class="dp-input" id="ap-user" placeholder="Your name for audit trail" style="flex:1" />
       <button class="btn" onclick="hideApprovalPanel()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="export-overlay hidden" id="export-overlay" onclick="closeExportIfBg(event)">
+  <div class="export-panel">
+    <div class="export-header">
+      <div class="export-title">✅ atlas.csv exported</div>
+      <button class="dp-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div class="export-body">
+      <div class="export-desc">Run these commands to deploy the updated atlas:</div>
+      <div class="export-cmd-wrap">
+        <code class="export-cmd" id="export-cmd-block"></code>
+        <button class="export-copy-btn" id="export-copy-btn" onclick="copyExportCmds()">Copy</button>
+      </div>
+    </div>
+    <div class="export-footer">
+      <button class="btn primary" onclick="closeExportModal()">Done</button>
     </div>
   </div>
 </div>
@@ -786,6 +830,7 @@ function refreshAll(){
   updateSidebarCounts();
   renderSidebarCells();
   renderSidebarTags();
+  renderSidebarExcluded();
   renderGallery();
   updateHeaderStats();
 }
@@ -799,16 +844,16 @@ function updateHeaderStats(){
 
 function updateSidebarCounts(){
   const recs=Object.values(G.records);
-  document.getElementById('sc-all').textContent=recs.length;
-  document.getElementById('sc-flagged').textContent=recs.filter(r=>r.discussion_flag==='true').length;
-  document.getElementById('sc-corrected').textContent=recs.filter(r=>r.correction_label).length;
+  const nonExcl=recs.filter(r=>r.path_status!=='excluded');
+  document.getElementById('sc-all').textContent=nonExcl.filter(r=>!isAberration(r)).length;
+  document.getElementById('sc-flagged').textContent=nonExcl.filter(r=>r.discussion_flag==='true').length;
+  document.getElementById('sc-corrected').textContent=nonExcl.filter(r=>r.correction_label).length;
   const excl=recs.filter(r=>r.path_status==='excluded').length;
-  document.getElementById('sc-excluded').textContent=excl;
   const exclEl=document.getElementById('stat-excluded');if(exclEl)exclEl.textContent=excl;
   const abEl=document.getElementById('sc-aberrations');
-  if(abEl)abEl.textContent=recs.filter(r=>isAberration(r)).length;
+  if(abEl)abEl.textContent=nonExcl.filter(r=>isAberration(r)).length;
   const taggedEl=document.getElementById('sc-all-tagged');
-  if(taggedEl)taggedEl.textContent=recs.filter(r=>r.tags&&r.tags.trim()).length;
+  if(taggedEl)taggedEl.textContent=nonExcl.filter(r=>r.tags&&r.tags.trim()).length;
 }
 
 function isAberration(rec){
@@ -820,6 +865,7 @@ function renderSidebarTags(){
   const el=document.getElementById('sidebar-tags');el.innerHTML='';
   const tagCounts={};
   Object.values(G.records).forEach(r=>{
+    if(r.path_status==='excluded')return;
     if(!r.tags||!r.tags.trim())return;
     r.tags.split(',').forEach(t=>{
       t=t.trim().toLowerCase();
@@ -842,6 +888,7 @@ function renderSidebarCells(){
   const counts={};
   const flagCounts={};
   Object.values(G.records).forEach(r=>{
+    if(r.path_status==='excluded')return;
     if(isAberration(r))return; // aberrations live in their own section
     const lbl=effectiveLabel(r);if(!lbl)return;
     counts[lbl]=(counts[lbl]||0)+1;
@@ -859,11 +906,46 @@ function renderSidebarCells(){
   });
 }
 
+function renderSidebarExcluded(){
+  const el=document.getElementById('sidebar-excluded-section');el.innerHTML='';
+  const exclRecs=Object.values(G.records).filter(r=>r.path_status==='excluded');
+  if(!exclRecs.length)return;
+  const isInExcluded=G.currentView==='excluded'||G.currentView.startsWith('excluded:');
+  // Divider
+  const div=document.createElement('div');div.className='sidebar-divider';el.appendChild(div);
+  // Section header label
+  const hdr=document.createElement('div');hdr.className='sidebar-header';hdr.style.marginTop='8px';hdr.textContent='Excluded';el.appendChild(hdr);
+  // All-excluded row
+  const allRow=document.createElement('div');
+  allRow.className='sidebar-excl-header'+(G.currentView==='excluded'?' active':'');
+  allRow.dataset.view='excluded';
+  allRow.innerHTML=`<span class="si-label">🚫 All Excluded</span><span class="si-count">${exclRecs.length}</span>`;
+  allRow.onclick=()=>setView('excluded');
+  el.appendChild(allRow);
+  // Per-type breakdown
+  const counts={};
+  exclRecs.forEach(r=>{const lbl=effectiveLabel(r);if(lbl)counts[lbl]=(counts[lbl]||0)+1;});
+  if(Object.keys(counts).length>1){
+    const sub=document.createElement('div');sub.className='sidebar-excl-sub';
+    Object.keys(counts).sort((a,b)=>(MATURATION[a]||99)-(MATURATION[b]||99)).forEach(lbl=>{
+      const key='excluded:'+lbl;
+      const d=document.createElement('div');
+      d.className='sidebar-item'+(G.currentView===key?' active':'');
+      d.dataset.view=key;
+      d.innerHTML=`<span class="si-label" style="font-size:12px">${esc(CELL_DISPLAY[lbl]||lbl)}</span><span class="si-count">${counts[lbl]}</span>`;
+      d.onclick=()=>setView(key);
+      sub.appendChild(d);
+    });
+    el.appendChild(sub);
+  }
+}
+
 // ── VIEW & FILTER ──────────────────────────────────────
 function setView(view){
   G.currentView=view;G.currentFilter='all';G.searchQuery='';
   document.getElementById('global-search').value='';
-  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.toggle('active',i.dataset.view===view));
+  document.querySelectorAll('.sidebar-item,.sidebar-excl-header').forEach(i=>i.classList.toggle('active',i.dataset.view===view));
+  renderSidebarExcluded();
   renderGallery();
 }
 
@@ -875,18 +957,23 @@ function onSearch(){
 // ── FILTER RECORDS ─────────────────────────────────────
 function filteredRecords(){
   let recs=Object.values(G.records);
+  const inExcludedView=G.currentView==='excluded'||G.currentView.startsWith('excluded:');
   // View filter
-  if(G.currentView==='all'){recs=recs.filter(r=>!isAberration(r));}
-  else if(G.currentView==='flagged'){recs=recs.filter(r=>r.discussion_flag==='true'&&!isAberration(r));}
-  else if(G.currentView==='corrected'){recs=recs.filter(r=>r.correction_label&&!isAberration(r));}
-  else if(G.currentView==='excluded'){recs=recs.filter(r=>r.path_status==='excluded'&&!isAberration(r));}
-  else if(G.currentView==='aberrations'){recs=recs.filter(r=>isAberration(r));}
-  else if(G.currentView==='all-tagged'){recs=recs.filter(r=>r.tags&&r.tags.trim());}
+  if(G.currentView==='all'){recs=recs.filter(r=>r.path_status!=='excluded'&&!isAberration(r));}
+  else if(G.currentView==='flagged'){recs=recs.filter(r=>r.path_status!=='excluded'&&r.discussion_flag==='true'&&!isAberration(r));}
+  else if(G.currentView==='corrected'){recs=recs.filter(r=>r.path_status!=='excluded'&&r.correction_label&&!isAberration(r));}
+  else if(G.currentView==='excluded'){recs=recs.filter(r=>r.path_status==='excluded');}
+  else if(G.currentView.startsWith('excluded:')){
+    const lbl=G.currentView.slice(9);
+    recs=recs.filter(r=>r.path_status==='excluded'&&effectiveLabel(r)===lbl);
+  }
+  else if(G.currentView==='aberrations'){recs=recs.filter(r=>r.path_status!=='excluded'&&isAberration(r));}
+  else if(G.currentView==='all-tagged'){recs=recs.filter(r=>r.path_status!=='excluded'&&r.tags&&r.tags.trim());}
   else if(G.currentView.startsWith('abtag:')){
     const tag=G.currentView.slice(6);
-    recs=recs.filter(r=>(r.tags||'').split(',').map(t=>t.trim().toLowerCase()).includes(tag));
+    recs=recs.filter(r=>r.path_status!=='excluded'&&(r.tags||'').split(',').map(t=>t.trim().toLowerCase()).includes(tag));
   }
-  else recs=recs.filter(r=>effectiveLabel(r)===G.currentView&&!isAberration(r));
+  else recs=recs.filter(r=>r.path_status!=='excluded'&&effectiveLabel(r)===G.currentView&&!isAberration(r));
   // Sub-filter
   if(G.currentFilter==='approved')recs=recs.filter(r=>r.path_status==='finalized');
   else if(G.currentFilter==='unapproved')recs=recs.filter(r=>r.path_status!=='finalized');
@@ -923,6 +1010,7 @@ function renderCatHeader(recs){
   const view=G.currentView;
   const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
   if(G.currentView.startsWith('abtag:'))viewNames[G.currentView]=G.currentView.slice(6).replace(/\b\w/g,c=>c.toUpperCase());
+  if(G.currentView.startsWith('excluded:')){const lbl=G.currentView.slice(9);viewNames[G.currentView]='Excluded — '+(CELL_DISPLAY[lbl]||lbl);}
   const title=viewNames[view]||(CELL_DISPLAY[view]||view);
   const total=recs.length;
   const flagged=recs.filter(r=>r.discussion_flag==='true').length;
@@ -1478,8 +1566,20 @@ function exportCSV(){
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
-  a.download=`heme_atlas_${dateTimeStr()}.csv`;a.click();
-  toast('CSV exported — replace data/atlas.csv in your repo and push');
+  a.download='atlas.csv';a.click();
+  const cmds='cp ~/Downloads/atlas.csv ~/Desktop/HemeAtlas/data/atlas.csv\ncd ~/Desktop/HemeAtlas\ngit add data/atlas.csv\ngit commit -m "Curate cells"\ngit push origin main';
+  document.getElementById('export-cmd-block').textContent=cmds;
+  document.getElementById('export-copy-btn').textContent='Copy';
+  document.getElementById('export-overlay').classList.remove('hidden');
+}
+function closeExportModal(){document.getElementById('export-overlay').classList.add('hidden');}
+function closeExportIfBg(e){if(e.target===document.getElementById('export-overlay'))closeExportModal();}
+function copyExportCmds(){
+  const cmds=document.getElementById('export-cmd-block').textContent;
+  navigator.clipboard.writeText(cmds).then(()=>{
+    const btn=document.getElementById('export-copy-btn');
+    btn.textContent='Copied!';setTimeout(()=>{btn.textContent='Copy';},2000);
+  });
 }
 
 // ── BULK APPROVAL ──────────────────────────────────────
