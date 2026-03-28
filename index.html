@@ -1104,7 +1104,7 @@ function _makeCard(rec){
       <div class="cc-label" style="${_gridIsTagView?'color:var(--amber)':''}">${_gridIsTagView?esc(_tagLabel):esc(_lbl)}</div>
       <div class="cc-sub">${_gridIsTagView?esc(_lbl):esc(rec.filename)}</div>
     </div>
-    ${isBorderline?'<div class="cc-border-badge">BORDERLINE</div>':''}\`;
+    ${isBorderline?'<div class="cc-border-badge">BORDERLINE</div>':''}`;
   card.onclick=()=>openDetail(rec.filename);
   return card;
 }
