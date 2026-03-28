@@ -351,10 +351,6 @@
         <span class="si-label">✏ Corrected</span>
         <span class="si-count" id="sc-corrected">0</span>
       </div>
-      <div class="sidebar-item" data-view="poor" onclick="setView('poor')">
-        <span class="si-label">⚠ Poor Quality</span>
-        <span class="si-count" id="sc-poor">0</span>
-      </div>
       <div class="sidebar-item" data-view="excluded" onclick="setView('excluded')">
         <span class="si-label">🚫 Excluded</span>
         <span class="si-count" id="sc-excluded">0</span>
@@ -806,7 +802,6 @@ function updateSidebarCounts(){
   document.getElementById('sc-all').textContent=recs.length;
   document.getElementById('sc-flagged').textContent=recs.filter(r=>r.discussion_flag==='true').length;
   document.getElementById('sc-corrected').textContent=recs.filter(r=>r.correction_label).length;
-  document.getElementById('sc-poor').textContent=recs.filter(r=>r.image_quality==='poor').length;
   const excl=recs.filter(r=>r.path_status==='excluded').length;
   document.getElementById('sc-excluded').textContent=excl;
   const exclEl=document.getElementById('stat-excluded');if(exclEl)exclEl.textContent=excl;
@@ -884,7 +879,6 @@ function filteredRecords(){
   if(G.currentView==='all'){recs=recs.filter(r=>!isAberration(r));}
   else if(G.currentView==='flagged'){recs=recs.filter(r=>r.discussion_flag==='true'&&!isAberration(r));}
   else if(G.currentView==='corrected'){recs=recs.filter(r=>r.correction_label&&!isAberration(r));}
-  else if(G.currentView==='poor'){recs=recs.filter(r=>r.image_quality==='poor'&&!isAberration(r));}
   else if(G.currentView==='excluded'){recs=recs.filter(r=>r.path_status==='excluded'&&!isAberration(r));}
   else if(G.currentView==='aberrations'){recs=recs.filter(r=>isAberration(r));}
   else if(G.currentView==='all-tagged'){recs=recs.filter(r=>r.tags&&r.tags.trim());}
@@ -927,7 +921,7 @@ function renderGallery(){
 function renderCatHeader(recs){
   const el=document.getElementById('cat-header');
   const view=G.currentView;
-  const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','poor':'Poor Quality Images','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
+  const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
   if(G.currentView.startsWith('abtag:'))viewNames[G.currentView]=G.currentView.slice(6).replace(/\b\w/g,c=>c.toUpperCase());
   const title=viewNames[view]||(CELL_DISPLAY[view]||view);
   const total=recs.length;
@@ -988,7 +982,6 @@ function _gMakeCard(rec){
   const displayLbl=CELL_DISPLAY[lbl]||lbl||'Unlabeled';
   const isFlagged=rec.discussion_flag==='true';
   const isCorrected=!!rec.correction_label;
-  const isPoor=rec.image_quality==='poor';
   const isBorderline=rec.tech_confidence==='borderline'||rec.path_confidence==='borderline';
   const isApproved=rec.path_status==='finalized';
   const isExcluded=rec.path_status==='excluded';
@@ -996,7 +989,7 @@ function _gMakeCard(rec){
 
   const isAb=isAberration(rec);
   const card=document.createElement('div');
-  card.className='cell-card'+(isFlagged?' flagged':'')+(isCorrected?' corrected':'')+(isPoor?' poor':'')+(isApproved?' approved':'')+(isExcluded?' excluded':'')+(isSelected?' sel-selected':'')+(isAb?' aberration-card':'');
+  card.className='cell-card'+(isFlagged?' flagged':'')+(isCorrected?' corrected':'')+(isApproved?' approved':'')+(isExcluded?' excluded':'')+(isSelected?' sel-selected':'')+(isAb?' aberration-card':'');
   card.id='card-'+rec.image_id;
 
   if(G.selectionMode){
@@ -1020,7 +1013,6 @@ function _gMakeCard(rec){
       <div class="cell-card-meta">
         ${isExcluded?'<span class="cc-pill excl">🚫 Excluded</span>':isApproved?'<span class="cc-pill fin">✅ Approved</span>':'<span class="cc-pill pre">Pending</span>'}
         ${isBorderline?'<span class="cc-pill border">Borderline</span>':''}
-        ${isPoor?'<span class="cc-pill poor">Poor</span>':''}
         ${isCorrected?'<span class="cc-pill corr">Corrected</span>':''}
       </div>
     </div>`;
@@ -1077,12 +1069,11 @@ function openDetail(filename){
   const dpImg=document.getElementById('dp-img');
   dpImg.src=getImageUrl(filename);
   dpImg.style.transform='';
-  dpImg.className='dp-cell-img'+(rec.image_quality==='poor'?' poor':'');
+  dpImg.className='dp-cell-img';
 
   // Image meta pills
   const imgMeta=document.getElementById('dp-img-meta');
   const pills=[];
-  if(rec.image_quality==='poor')pills.push(`<span class="cc-pill poor">⚠ Poor Quality</span>`);
   if(rec.tech_confidence==='borderline'||rec.path_confidence==='borderline')pills.push(`<span class="cc-pill border">Borderline</span>`);
   if(rec.discussion_flag==='true')pills.push(`<span class="cc-pill poor">🚩 Flagged</span>`);
   if(rec.correction_label)pills.push(`<span class="cc-pill corr">✏ Corrected</span>`);
@@ -1196,7 +1187,6 @@ function renderDetailInfo(rec){
   if(rec.tech_label)identHtml+=dpField('Tech Label',esc(CELL_DISPLAY[rec.tech_label]||rec.tech_label)+' <span style="font-size:10px;color:var(--text3)">('+esc(rec.tech_confidence||'—')+')</span>');
   if(rec.path_label)identHtml+=dpField('Path Label',esc(CELL_DISPLAY[rec.path_label]||rec.path_label)+' <span style="font-size:10px;color:var(--text3)">('+esc(rec.path_confidence||'—')+')</span>');
   if(rec.correction_label)identHtml+=dpField('Corrected To',`<span style="color:var(--purple);font-weight:600">${esc(CELL_DISPLAY[rec.correction_label]||rec.correction_label)}</span>`);
-  identHtml+=dpField('Quality',rec.image_quality==='poor'?'<span style="color:var(--red)">⚠ Poor</span>':'<span style="color:var(--green)">✓ Acceptable</span>');
   if(rec.path_commentary!==undefined){
     const commentaryVal=esc(rec.path_commentary||'');
     identHtml+=`<div class="dp-field-row">
