@@ -1830,6 +1830,11 @@ function buildWeightedQueue(){
   Object.values(S.records).forEach(r=>{
     const lbl = effectiveLabel(r);
     if(!lbl) return;
+    // Beginner basic pool: clean source (cellwiki/ku-optofil) + no tags
+    if(T.beginnerMode){
+      const cleanSrc=r.case_tag==='cellwiki'||r.case_tag==='ku-optofil';
+      if(!cleanSrc||r.tags&&r.tags.trim()) return;
+    }
     if(!buckets[lbl]) buckets[lbl] = [];
     buckets[lbl].push(r);
   });
@@ -1876,7 +1881,11 @@ function startTrainer(){
   T.phase='idle';
   // Build curveball pool for beginner mode (other 9 cell types)
   T.curveballPool=T.beginnerMode
-    ? Object.values(S.records).filter(r=>CURVEBALL_TYPES.includes(effectiveLabel(r)))
+    ? Object.values(S.records).filter(r=>{
+        const lbl=effectiveLabel(r);
+        if(!CURVEBALL_TYPES.includes(lbl)) return false;
+        return r.case_tag==='cellwiki'||r.case_tag==='ku-optofil';
+      })
     : [];
 
   document.getElementById('tr-config-screen').classList.add('hidden');
