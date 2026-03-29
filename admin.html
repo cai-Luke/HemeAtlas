@@ -1673,7 +1673,7 @@ function parseRow(row){
   }
   res.push(cur);return res;
 }
-function csvEsc(s){return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
+function csvEsc(s){if(s.includes(',')||s.includes('"')||s.includes('\n')||s.includes('\r')){return'"'+s.replace(/\r\n|\r|\n/g,' ').replace(/"/g,'""')+'"';}return s;}
 
 // ── UTILS ──────────────────────────────────────────────
 function now(){return new Date().toISOString();}

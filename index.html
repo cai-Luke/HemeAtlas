@@ -1048,7 +1048,7 @@ async function loadAtlas(){
     const resp = await fetch(CSV_URL);
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
-    const lines = text.split('\n').filter(l=>l.trim());
+    const lines = text.replace(/\r\n|\r/g,'\n').split('\n').filter(l=>l.trim());
     if(lines.length<2){ hintEl.textContent='⚠ CSV appears empty.'; return; }
     const headers = parseRow(lines[0]);
     let loaded=0;
