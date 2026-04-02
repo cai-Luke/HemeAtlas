@@ -576,6 +576,10 @@
   .dc-btn.primary:hover{background:var(--accent);color:#fff}
   .dc-btn.danger{color:var(--red)}
   .dc-btn.danger:hover{background:var(--red-dim);border-color:var(--red)}
+  .dc-dashboard-wrapper{display:grid;grid-template-columns:1.8fr 1fr;gap:24px;align-items:start;margin-top:20px}
+  .dc-section.rbc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;height:fit-content}
+  .dc-dashboard-wrapper h3{font-family:'DM Mono',monospace;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:12px;margin-top:0;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  @media(max-width:1024px){.dc-dashboard-wrapper{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -871,23 +875,28 @@
         <button class="dc-btn" id="dc-rbc-toggle" onclick="dcToggleRBC()" title="Show/hide RBC morphology">RBC Morphology ▾</button>
         <button class="dc-btn" onclick="dcUndo()" title="Undo last (Backspace)">↩ Undo</button>
       </div>
-      <div class="dc-body-row">
-        <table class="dc-table">
-          <thead>
-            <tr>
-              <th>Cell Type</th>
-              <th>Key</th>
-              <th class="right">Count</th>
-              <th class="right">%</th>
-            </tr>
-          </thead>
-          <tbody id="dc-tbody"></tbody>
-        </table>
-        <div class="dc-rbc-wrap" id="dc-rbc-wrap">
-          <div class="dc-rbc-kb-hint">RBC panel active — ↑↓ to navigate, 0–3 to grade, Esc to exit</div>
-          <div class="dc-rbc-panel">
-            <div class="dc-rbc-title">RBC Morphology <span style="font-size:11px;font-weight:400;color:var(--text3)">(click panel then use ↑↓ / 0–3 for keyboard entry)</span></div>
-            <div id="dc-rbc-cats"></div>
+      <div class="dc-dashboard-wrapper">
+        <div class="dc-section wbc">
+          <h3>WBC Differential</h3>
+          <table class="dc-table">
+            <thead>
+              <tr>
+                <th>Cell Type</th>
+                <th>Key</th>
+                <th class="right">Count</th>
+                <th class="right">%</th>
+              </tr>
+            </thead>
+            <tbody id="dc-tbody"></tbody>
+          </table>
+        </div>
+        <div class="dc-section rbc">
+          <h3>RBC Morphology</h3>
+          <div class="dc-rbc-wrap" id="dc-rbc-wrap">
+            <div class="dc-rbc-kb-hint">RBC panel active — ↑↓ to navigate, 0–3 to grade, Esc to exit</div>
+            <div class="dc-rbc-panel">
+              <div id="dc-rbc-cats"></div>
+            </div>
           </div>
         </div>
       </div>
