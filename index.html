@@ -117,8 +117,8 @@
   .hub-card:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(124,158,248,.12);transform:translateY(-2px)}
   .hub-card-title{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text)}
   .hub-card-desc{font-size:12px;color:var(--text3);line-height:1.6}
-  .hub-mosaic{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-  .hub-mosaic img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;border:1.5px solid transparent;transition:border-color .12s}
+  .hub-mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hub-mosaic img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;border:1.5px solid transparent;transition:border-color .12s, opacity .35s ease}
   .hub-mosaic img:hover{border-color:var(--accent)}
   .hub-train-preview{display:flex;flex-direction:column;align-items:center;gap:10px}
   .hub-train-img{width:150px;height:150px;object-fit:cover;border-radius:var(--radius-lg);border:1.5px solid var(--border2)}
@@ -1155,23 +1155,44 @@ function launchApp(){
 function hideHub(){
   const h=document.getElementById('hub');
   if(h) h.classList.add('hidden');
+  clearInterval(hubMosaicInterval);
+  hubMosaicInterval=null;
 }
 
 function buildBrowseMosaic(){
-  const types=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
-  const recs=Object.values(S.records);
-  return types.map(type=>{
-    const rec=recs.find(r=>effectiveLabel(r)===type);
-    return {type,rec};
-  }).filter(x=>x.rec);
+  const all=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
+
+  function byTag(tag){
+    const matches=all.filter(r=>{
+      const tags=(r.tags||'').split(',').map(t=>t.trim().toLowerCase());
+      return tags.includes(tag.toLowerCase());
+    });
+    return matches.length?matches[Math.floor(Math.random()*matches.length)]:null;
+  }
+
+  function byType(type){
+    const matches=Object.values(S.records).filter(r=>effectiveLabel(r)===type);
+    return matches.length?matches[Math.floor(Math.random()*matches.length)]:null;
+  }
+
+  const fallback=()=>all[Math.floor(Math.random()*all.length)];
+
+  return [
+    {label:'Mott cells',      rec:byTag('mott cells')      ||fallback()},
+    {label:'Auer rods',       rec:byTag('auer rods')       ||fallback()},
+    {label:'Hypergranulation',rec:byTag('hypergranulation')||fallback()},
+    {label:'Pelger-Huët',     rec:byTag('pelger huet')     ||fallback()},
+    {label:'Nucleoli',        rec:byTag('nucleoli')        ||fallback()},
+    {label:'Plasma cell',     rec:byType('PLASMA')         ||fallback()},
+  ];
 }
 
 function buildHub(){
   const hub=document.getElementById('hub');
   if(!hub) return;
   const mosaic=buildBrowseMosaic();
-  const mosaicHtml=mosaic.map(({type,rec})=>
-    `<img src="${getImageUrl(rec.filename)}" loading="lazy" title="${esc(CELL_DISPLAY[type]||type)}" alt="${esc(CELL_DISPLAY[type]||type)}">`
+  const mosaicHtml=mosaic.map(({label,rec})=>
+    `<img src="${getImageUrl(rec.filename)}" loading="lazy" title="${esc(label)}" alt="${esc(label)}">`
   ).join('');
   const allRecs=Object.values(S.records);
   const trainRec=allRecs[Math.floor(Math.random()*allRecs.length)];
@@ -1219,6 +1240,38 @@ function buildHub(){
     </div>`;
   const trainImg=document.getElementById('hub-train-img');
   if(trainImg) applyRandomOrientation(trainImg);
+
+  clearInterval(hubMosaicInterval);
+  hubMosaicInterval=null;
+
+  const CYCLE_DELAY=8000;
+  const CYCLE_INTERVAL=10000;
+  const FADE_MS=350;
+  const STAGGER_MS=90;
+
+  function rerollMosaic(){
+    const all=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
+    const imgs=document.querySelectorAll('.hub-mosaic img');
+    if(!imgs.length) return;
+    imgs.forEach((img,i)=>{
+      setTimeout(()=>{
+        img.style.opacity='0';
+        setTimeout(()=>{
+          const rec=all[Math.floor(Math.random()*all.length)];
+          const label=effectiveLabel(rec);
+          img.src=getImageUrl(rec.filename);
+          img.title=esc(CELL_DISPLAY[label]||label);
+          img.alt=esc(CELL_DISPLAY[label]||label);
+          img.style.opacity='1';
+        },FADE_MS);
+      },i*STAGGER_MS);
+    });
+  }
+
+  setTimeout(()=>{
+    rerollMosaic();
+    hubMosaicInterval=setInterval(rerollMosaic,CYCLE_INTERVAL);
+  },CYCLE_DELAY);
 }
 
 // ── ABOUT MODAL ────────────────────────────────────────
@@ -1365,6 +1418,7 @@ let _gridObserver = null;
 let _gridRecs = [];     // full filtered list for current view
 let _gridCursor = 0;    // how many cards have been rendered so far
 let _gridIsTagView = false;
+let hubMosaicInterval = null;
 
 function renderGrid(){
   const empty=document.getElementById('empty-state');
