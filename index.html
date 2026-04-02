@@ -550,6 +550,10 @@
   .dc-pct{font-size:13px;font-family:'DM Mono',monospace;color:var(--text3);text-align:right;min-width:50px}
   .dc-row.nonzero .dc-cnt{color:var(--accent)}
   .dc-total-bar.locked .dc-row:not(.nonzero) td{opacity:0.5}
+  .dc-body-row{display:flex;gap:16px;align-items:flex-start;width:100%}
+  .dc-body-row .dc-table{flex:0 0 auto}
+  .dc-body-row .dc-rbc-wrap{flex:1;min-width:260px}
+  @media(max-width:700px){.dc-body-row{flex-direction:column}}
   .dc-rbc-wrap{width:100%}
   .dc-rbc-panel{background:var(--surface);border-radius:var(--radius-lg);padding:16px}
   .dc-rbc-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px}
@@ -703,6 +707,7 @@
           <div class="tr-config-title">Differential Trainer</div>
           <div class="tr-config-sub">Identify each cell using the correct keyboard shortcut — the same keys used in the classifier. No hints, no choices.</div>
         </div>
+        <button class="tr-start-btn" id="tr-start-btn" onclick="startTrainer()">Start Session →</button>
         <div>
           <div class="tr-field-label">Session length</div>
           <div class="tr-count-row">
@@ -744,7 +749,6 @@
           </div>
           <div class="tr-keybind-table" id="tr-keybind-ref"></div>
         </div>
-        <button class="tr-start-btn" id="tr-start-btn" onclick="startTrainer()">Start Session →</button>
       </div>
     </div>
     <!-- SESSION -->
@@ -868,6 +872,7 @@
         <div class="dc-total-slash">/ 100</div>
         <span class="dc-complete-badge">Complete</span>
         <div style="flex:1"></div>
+        <button class="dc-btn" id="dc-rbc-toggle" onclick="dcToggleRBC()" title="Show/hide RBC morphology">RBC Morphology ▾</button>
         <button class="dc-btn" onclick="dcUndo()" title="Undo last (Backspace)">↩ Undo</button>
       </div>
       <div class="dc-dashboard-wrapper">
@@ -1059,7 +1064,7 @@ async function loadAtlas(){
     const resp = await fetch(CSV_URL);
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
-    const lines = text.split('\n').filter(l=>l.trim());
+    const lines = text.replace(/\r\n|\r/g,'\n').split('\n').filter(l=>l.trim());
     if(lines.length<2){ hintEl.textContent='⚠ CSV appears empty.'; return; }
     const headers = parseRow(lines[0]);
     let loaded=0;
@@ -2997,6 +3002,7 @@ const DC = {
   history: [],
   rbc: Object.fromEntries(RBC_FEATURES.map(f=>[f,0])),
   locked: false,
+  rbcVisible: true,
   rbcFocused: false,
   rbcFocusIdx: 0,
   _inited: false,
@@ -3080,13 +3086,35 @@ function dcUpdateTotal(){
   if(nrbcEl) nrbcEl.textContent=DC.counts['NRBC'];
 }
 
+function dcPlayCompleteSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const play=(freq,start,dur)=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type='sine'; osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,ctx.currentTime+start);
+      gain.gain.linearRampToValueAtTime(0.18,ctx.currentTime+start+0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      osc.start(ctx.currentTime+start);
+      osc.stop(ctx.currentTime+start+dur);
+    };
+    play(880,0,0.25);
+    play(1174,0.18,0.35);
+  }catch(e){}
+}
+
 function dcCount(cellName){
   const isNrbc=cellName==='NRBC';
   if(!isNrbc&&DC.locked) return;
   DC.counts[cellName]++;
   DC.history.push(cellName);
   const wbcTotal=DC_WBC.reduce((s,c)=>s+DC.counts[c.name],0);
-  if(!isNrbc&&wbcTotal>=100) DC.locked=true;
+  if(!isNrbc&&wbcTotal>=100){
+    DC.locked=true;
+    dcPlayCompleteSound();
+  }
   dcUpdateTotal();
 }
 
@@ -3099,12 +3127,21 @@ function dcUndo(){
   dcUpdateTotal();
 }
 
+function dcToggleRBC(){
+  DC.rbcVisible=!DC.rbcVisible;
+  document.getElementById('dc-rbc-wrap').style.display=DC.rbcVisible?'':'none';
+  document.getElementById('dc-rbc-toggle').textContent=DC.rbcVisible?'RBC Morphology ▾':'RBC Morphology ▸';
+}
+
 function dcReset(){
   if(!confirm('Reset all counts?')) return;
   const name=document.getElementById('dc-name').value;
   CELLS.forEach(c=>{ DC.counts[c.name]=0; });
   DC.history=[];
   DC.locked=false;
+  DC.rbcVisible=true;
+  document.getElementById('dc-rbc-wrap').style.display='';
+  document.getElementById('dc-rbc-toggle').textContent='RBC Morphology ▾';
   RBC_FEATURES.forEach(f=>{ DC.rbc[f]=0; });
   document.querySelectorAll('.dc-grade-btn').forEach(btn=>{
     btn.classList.toggle('selected',btn.textContent==='None');
