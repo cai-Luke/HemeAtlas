@@ -109,12 +109,42 @@
   .empty-state h3{font-size:16px;font-weight:600;color:var(--text2)}
   .empty-state p{font-size:13px;max-width:280px;line-height:1.7;color:var(--text3)}
 
-  /* ── ATTRIBUTION ── */
-  .attribution{position:fixed;bottom:0;left:0;right:0;padding:8px 20px;background:var(--surface);border-top:1px solid var(--border);font-size:10px;color:var(--text4);text-align:center;z-index:100;display:none;line-height:1.6}
-  .app.visible~.attribution{display:block}
-  .attribution a{color:var(--accent);text-decoration:none}
-  .attribution a:hover{text-decoration:underline}
-  .attribution p{margin:0}
+  /* ── HUB ── */
+  .hub{display:flex;flex-direction:column;align-items:center;gap:24px;padding:40px 20px;overflow-y:auto;height:100%}
+  .hub.hidden{display:none!important}
+  .hub-primary{display:flex;gap:20px;width:100%;max-width:900px}
+  .hub-card{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-xl);padding:24px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:16px}
+  .hub-card:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(124,158,248,.12);transform:translateY(-2px)}
+  .hub-card-title{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text)}
+  .hub-card-desc{font-size:12px;color:var(--text3);line-height:1.6}
+  .hub-mosaic{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .hub-mosaic img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;border:1.5px solid transparent;transition:border-color .12s}
+  .hub-mosaic img:hover{border-color:var(--accent)}
+  .hub-train-preview{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .hub-train-img{width:150px;height:150px;object-fit:cover;border-radius:var(--radius-lg);border:1.5px solid var(--border2)}
+  .hub-keypad-preview{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;opacity:0.45;pointer-events:none;width:100%}
+  .hub-key-chip{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 0;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+  .hub-secondary{display:flex;gap:16px;width:100%;max-width:900px}
+  .hub-tile{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:6px}
+  .hub-tile:hover{border-color:var(--accent);background:var(--surface2)}
+  .hub-tile-icon{font-size:20px}
+  .hub-tile-title{font-size:13px;font-weight:600;color:var(--text)}
+  .hub-tile-desc{font-size:11px;color:var(--text3);line-height:1.5}
+
+  /* ── ABOUT MODAL ── */
+  .about-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .about-btn:hover{color:var(--text);border-color:var(--accent)}
+  .about-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+  .about-overlay.hidden{display:none!important}
+  .about-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:520px;max-width:calc(100vw - 40px);max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+  .about-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .about-title{font-family:'Instrument Serif',serif;font-size:20px;color:var(--text)}
+  .about-body{padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .about-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text4);margin-top:8px}
+  .about-text{font-size:13px;color:var(--text2);line-height:1.8}
+  .about-text a{color:var(--accent);text-decoration:none}
+  .about-text a:hover{text-decoration:underline}
+  .about-placeholder{color:var(--text4);font-style:italic}
 
   /* ── DETAIL OVERLAY ── */
   .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -619,6 +649,7 @@
       <button class="mode-btn" id="mode-train" onclick="setMode('train')">Train</button>
       <button class="mode-btn" id="mode-diff" onclick="setMode('diff')">Diff Counter</button>
     </div>
+    <button class="about-btn" id="about-btn" onclick="openAbout()">ⓘ About</button>
   </div>
   <div class="body">
     <div class="sidebar">
@@ -645,6 +676,7 @@
         <div class="cell-grid" id="cell-grid"></div>
       </div>
       <div id="poster-area" class="poster-area hidden"></div>
+      <div class="hub hidden" id="hub"></div>
     </div>
   </div>
 
@@ -909,11 +941,6 @@
 
 </div><!-- end .app -->
 
-<!-- ATTRIBUTION -->
-<div class="attribution" id="attribution">
-  <p>Cell images courtesy of <a href="https://cellwiki.net" target="_blank" rel="noopener">CellWiki</a> (a project of LabThings), used for educational purposes.</p>
-  <p>KU-Optofil PBC Dataset by Yarıkan et al. (2026), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. DOI: <a href="https://doi.org/10.1038/s41597-026-06761-y" target="_blank" rel="noopener">10.1038/s41597-026-06761-y</a></p>
-</div>
 <div class="detail-overlay hidden" id="detail-overlay" onclick="closeDetailIfBg(event)">
   <div class="detail-panel">
     <button class="dp-nav prev" id="dp-prev" onclick="navDetail(-1)">‹</button>
@@ -948,6 +975,29 @@
 </div>
 
 <div id="toasts"></div>
+
+<!-- ABOUT MODAL -->
+<div class="about-overlay hidden" id="about-overlay" onclick="closeAbout()">
+  <div class="about-panel" onclick="event.stopPropagation()">
+    <div class="about-header">
+      <div class="about-title">About HemeAtlas</div>
+      <button class="dp-close" onclick="closeAbout()">✕</button>
+    </div>
+    <div class="about-body">
+      <div class="about-section-label">What is this?</div>
+      <p class="about-text">HemeAtlas is a curated reference library of peripheral blood cell morphology images for hematology education. This is a working document — a more complete methods summary and acknowledgments will be added here in a future update.</p>
+
+      <div class="about-section-label">Datasets &amp; Attribution</div>
+      <p class="about-text">
+        Cell images courtesy of <a href="https://cellwiki.net" target="_blank" rel="noopener">CellWiki</a> (a project of LabThings), used for educational purposes.<br><br>
+        KU-Optofil PBC Dataset by Yarıkan et al. (2026), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. DOI: <a href="https://doi.org/10.1038/s41597-026-06761-y" target="_blank" rel="noopener">10.1038/s41597-026-06761-y</a>
+      </p>
+
+      <div class="about-section-label">Methods</div>
+      <p class="about-text about-placeholder">A full description of curation methods, cell classification criteria, and data provenance will appear here in a future update.</p>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── CONSTANTS ──────────────────────────────────────────
@@ -1096,7 +1146,87 @@ function launchApp(){
   document.getElementById('app').classList.add('visible');
   buildSidebar();
   buildAberrationSidebar();
+  buildHub();
+  document.getElementById('hub').classList.remove('hidden');
   updateStats();
+}
+
+// ── HUB ───────────────────────────────────────────────
+function hideHub(){
+  const h=document.getElementById('hub');
+  if(h) h.classList.add('hidden');
+}
+
+function buildBrowseMosaic(){
+  const types=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
+  const recs=Object.values(S.records);
+  return types.map(type=>{
+    const rec=recs.find(r=>effectiveLabel(r)===type);
+    return {type,rec};
+  }).filter(x=>x.rec);
+}
+
+function buildHub(){
+  const hub=document.getElementById('hub');
+  if(!hub) return;
+  const mosaic=buildBrowseMosaic();
+  const mosaicHtml=mosaic.map(({type,rec})=>
+    `<img src="${getImageUrl(rec.filename)}" loading="lazy" title="${esc(CELL_DISPLAY[type]||type)}" alt="${esc(CELL_DISPLAY[type]||type)}">`
+  ).join('');
+  const allRecs=Object.values(S.records);
+  const trainRec=allRecs[Math.floor(Math.random()*allRecs.length)];
+  const keypadCells=CELLS.filter(c=>c.key!=='\\').slice(0,15);
+  const keypadHtml=keypadCells.map(c=>
+    `<div class="hub-key-chip"><div>${esc(c.key)}</div><div>${esc(c.short.split(' ')[0])}</div></div>`
+  ).join('');
+  const total=(Object.keys(S.records).length+Object.keys(S.aberrationRecords).length).toLocaleString();
+  hub.innerHTML=`
+    <div class="hub-primary">
+      <div class="hub-card" onclick="setMode('browse');setView('all')">
+        <div>
+          <div class="hub-card-title">Browse</div>
+          <div class="hub-card-desc">Explore ${total} curated peripheral blood cell images</div>
+        </div>
+        <div class="hub-mosaic">${mosaicHtml}</div>
+      </div>
+      <div class="hub-card" onclick="setMode('train')">
+        <div>
+          <div class="hub-card-title">Train</div>
+          <div class="hub-card-desc">Test your differential recognition with keyboard shortcuts</div>
+        </div>
+        <div class="hub-train-preview">
+          <img class="hub-train-img" id="hub-train-img" src="${getImageUrl(trainRec.filename)}" alt="Training preview" />
+          <div class="hub-keypad-preview">${keypadHtml}</div>
+        </div>
+      </div>
+    </div>
+    <div class="hub-secondary">
+      <div class="hub-tile" onclick="setMode('compare')">
+        <div class="hub-tile-icon">⇄</div>
+        <div class="hub-tile-title">Compare</div>
+        <div class="hub-tile-desc">Study two cell types side by side</div>
+      </div>
+      <div class="hub-tile" onclick="setMode('diff')">
+        <div class="hub-tile-icon">🧮</div>
+        <div class="hub-tile-title">Diff Counter</div>
+        <div class="hub-tile-desc">100-cell WBC tally with RBC morphology grading</div>
+      </div>
+      <div class="hub-tile" onclick="openAbout()">
+        <div class="hub-tile-icon">ⓘ</div>
+        <div class="hub-tile-title">About</div>
+        <div class="hub-tile-desc">Methods, datasets, and attribution</div>
+      </div>
+    </div>`;
+  const trainImg=document.getElementById('hub-train-img');
+  if(trainImg) applyRandomOrientation(trainImg);
+}
+
+// ── ABOUT MODAL ────────────────────────────────────────
+function openAbout(){
+  document.getElementById('about-overlay').classList.remove('hidden');
+}
+function closeAbout(){
+  document.getElementById('about-overlay').classList.add('hidden');
 }
 
 // ── IMAGE AUGMENTATION ─────────────────────────────────
@@ -1178,6 +1308,7 @@ function buildAberrationSidebar(){
 
 function setView(key){
   S.currentView=key;S.searchQuery='';
+  hideHub();
   hidePoster();
   document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('grid-area').classList.remove('hidden');
@@ -1238,6 +1369,7 @@ let _gridIsTagView = false;
 function renderGrid(){
   const empty=document.getElementById('empty-state');
   const gridArea=document.getElementById('grid-area');
+  hideHub();
   if(!S.currentView){empty.classList.remove('hidden');gridArea.classList.add('hidden');return;}
   const recs=filteredRecords();
   S.filteredList=recs.map(r=>r.filename);
@@ -1512,6 +1644,7 @@ function parseRow(row){
 // ── MODE TOGGLE ────────────────────────────────────────
 function setMode(mode,opts={}){
   const isBrowse=mode==='browse', isCompare=mode==='compare', isTrain=mode==='train', isDiff=mode==='diff';
+  hideHub();
   hidePoster();
   document.getElementById('mode-browse').classList.toggle('active',isBrowse);
   document.getElementById('mode-compare').classList.toggle('active',isCompare);
@@ -2100,6 +2233,7 @@ document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
 
   if(e.key==='Escape'){
+    if(!document.getElementById('about-overlay').classList.contains('hidden')){closeAbout();return;}
     if(!document.getElementById('zoom-overlay').classList.contains('hidden')){closeZoom();return;}
     if(!document.getElementById('detail-overlay').classList.contains('hidden')){closeDetail();return;}
     return;
@@ -2841,6 +2975,7 @@ function _recsForTag(tagLower){
 }
 
 function showTagPoster(){
+  hideHub();
   document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('grid-area').classList.add('hidden');
   document.getElementById('poster-area').classList.remove('hidden');
