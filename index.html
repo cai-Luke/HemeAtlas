@@ -147,7 +147,7 @@
   .about-placeholder{color:var(--text4);font-style:italic}
 
   /* ── DETAIL OVERLAY ── */
-  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
   .detail-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:880px;max-width:calc(100vw - 40px);height:82vh;max-height:660px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 
   /* ── DETAIL HEADER ── */
@@ -949,6 +949,7 @@
       <div class="dp-title" id="dp-title">—</div>
       <span class="dp-badge" id="dp-conf-badge"></span>
       <button class="dp-close" style="margin-left:4px;padding:4px 10px;width:auto;border-radius:var(--radius);font-size:11px;font-weight:700;color:var(--text3)" id="dp-compare-btn" onclick="openCompareFromDetail()">⇄ Compare</button>
+      <button class="dp-close" style="margin-left:4px;padding:4px 10px;width:auto;border-radius:var(--radius);font-size:11px;font-weight:700;color:var(--text3)" id="dp-morph-btn" onclick="openMorphFromDetail()" title="View morphometry data">📐 Morph</button>
       <button class="dp-close" onclick="closeDetail()">✕</button>
     </div>
     <div class="dp-body">
@@ -1497,7 +1498,7 @@ function _makeCard(rec){
       <div class="cc-sub">${_gridIsTagView?esc(_lbl):esc(rec.filename)}</div>
     </div>
     ${isBorderline?'<div class="cc-border-badge">BORDERLINE</div>':''}`;
-  card.onclick=()=>openMorphPanel(rec);
+  card.onclick=()=>openDetail(rec.filename);
   return card;
 }
 
@@ -1601,6 +1602,10 @@ function openDetail(filename){
   document.getElementById('dp-next').disabled=idx>=S.filteredList.length-1;
 
   document.getElementById('detail-overlay').classList.remove('hidden');
+
+  const hasMorph = rec.m_seg_quality === 'good';
+  const morphBtn = document.getElementById('dp-morph-btn');
+  if (morphBtn) morphBtn.style.display = hasMorph ? '' : 'none';
 }
 
 function renderDetailInfo(rec,displayLbl){
@@ -1669,7 +1674,13 @@ function navDetail(dir){
   openDetail(S.filteredList[next]);
 }
 
-function closeDetail(){document.getElementById('detail-overlay').classList.add('hidden');S.detailId=null;}
+function openMorphFromDetail(){
+  if(!S.detailId)return;
+  const rec=S.records[S.detailId]||S.aberrationRecords[S.detailId];
+  if(!rec)return;
+  openMorphPanel(rec);
+}
+function closeDetail(){closeMorphPanel();document.getElementById('detail-overlay').classList.add('hidden');S.detailId=null;}
 function closeDetailIfBg(e){if(e.target===document.getElementById('detail-overlay'))closeDetail();}
 
 function openCompareFromDetail(){
@@ -3671,12 +3682,12 @@ function dcExportCSV(){
 }
 </script>
 
-<div id="morph-overlay" onclick="closeMorphPanel()" style="display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,0)"></div>
+<div id="morph-overlay" onclick="closeMorphPanel()" style="display:none;position:fixed;inset:0;z-index:399;background:rgba(0,0,0,0)"></div>
 
 <div id="morph-panel" style="
     position:fixed;
     bottom:0;left:0;right:0;
-    z-index:300;
+    z-index:400;
     background:var(--surface);
     border-top:0.5px solid var(--border);
     border-radius:16px 16px 0 0;
