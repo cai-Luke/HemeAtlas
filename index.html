@@ -1058,27 +1058,27 @@ const ADJACENT = {
 const MORPH_RANGES = {
   "m_nc_ratio": { "min": 0.1936, "max": 0.9783 },
   "m_nuc_solidity": { "min": 0.65, "max": 0.9799 },
-  "m_nuc_lobes": { "min": 1.0, "max": 20.0 },
+  "m_nuc_irregularity": { "min": 0.1991, "max": 10.3011 },
   "m_cell_circularity": { "min": 0.1762, "max": 0.875 },
   "m_nuc_glcm_contrast": { "min": 13.6512, "max": 34.6779 },
   "m_cyto_mean_hue": { "min": 0.2443, "max": 0.7295 }
 };
 
 const MORPH_AVERAGES = {
-  "BAND": { "m_nc_ratio": 0.8182, "m_nuc_solidity": 0.8438, "m_nuc_lobes": 10.9159, "m_cell_circularity": 0.5086, "m_nuc_glcm_contrast": 24.0877, "m_cyto_mean_hue": 0.4755 },
-  "BASOPHIL": { "m_nc_ratio": 0.9369, "m_nuc_solidity": 0.7949, "m_nuc_lobes": 11.8137, "m_cell_circularity": 0.4018, "m_nuc_glcm_contrast": 25.4351, "m_cyto_mean_hue": 0.4325 },
-  "BLAST": { "m_nc_ratio": 0.8573, "m_nuc_solidity": 0.8157, "m_nuc_lobes": 9.9383, "m_cell_circularity": 0.4014, "m_nuc_glcm_contrast": 20.3362, "m_cyto_mean_hue": 0.5077 },
-  "EOSINOPHIL": { "m_nc_ratio": 0.937, "m_nuc_solidity": 0.7905, "m_nuc_lobes": 14.1077, "m_cell_circularity": 0.3586, "m_nuc_glcm_contrast": 27.4274, "m_cyto_mean_hue": 0.3796 },
-  "LYMPHOCYTE": { "m_nc_ratio": 0.9426, "m_nuc_solidity": 0.8701, "m_nuc_lobes": 15.5211, "m_cell_circularity": 0.5512, "m_nuc_glcm_contrast": 26.8829, "m_cyto_mean_hue": 0.4103 },
-  "METAMYELOCYTE": { "m_nc_ratio": 0.8763, "m_nuc_solidity": 0.762, "m_nuc_lobes": 10.7959, "m_cell_circularity": 0.3079, "m_nuc_glcm_contrast": 23.7378, "m_cyto_mean_hue": 0.4678 },
-  "MONOCYTE": { "m_nc_ratio": 0.8553, "m_nuc_solidity": 0.7782, "m_nuc_lobes": 11.5117, "m_cell_circularity": 0.3495, "m_nuc_glcm_contrast": 25.6428, "m_cyto_mean_hue": 0.4847 },
-  "MYELOCYTE": { "m_nc_ratio": 0.801, "m_nuc_solidity": 0.7748, "m_nuc_lobes": 10.0, "m_cell_circularity": 0.2926, "m_nuc_glcm_contrast": 23.5, "m_cyto_mean_hue": 0.4743 },
-  "NEUTROPHIL": { "m_nc_ratio": 0.4129, "m_nuc_solidity": 0.8179, "m_nuc_lobes": 6.1762, "m_cell_circularity": 0.3602, "m_nuc_glcm_contrast": 24.9132, "m_cyto_mean_hue": 0.6036 },
-  "NRBC": { "m_nc_ratio": 0.895, "m_nuc_solidity": 0.9144, "m_nuc_lobes": 12.1887, "m_cell_circularity": 0.6578, "m_nuc_glcm_contrast": 22.5313, "m_cyto_mean_hue": 0.3558 },
-  "OTHER": { "m_nc_ratio": 0.6327, "m_nuc_solidity": 0.8114, "m_nuc_lobes": 11.2963, "m_cell_circularity": 0.3992, "m_nuc_glcm_contrast": 32.5506, "m_cyto_mean_hue": 0.3927 },
-  "PLASMA": { "m_nc_ratio": 0.4321, "m_nuc_solidity": 0.9306, "m_nuc_lobes": 1.6408, "m_cell_circularity": 0.618, "m_nuc_glcm_contrast": 18.2598, "m_cyto_mean_hue": 0.6795 },
-  "PROMYELOCYTE": { "m_nc_ratio": 0.32, "m_nuc_solidity": 0.9106, "m_nuc_lobes": 1.5629, "m_cell_circularity": 0.3573, "m_nuc_glcm_contrast": 15.0935, "m_cyto_mean_hue": 0.6887 },
-  "REACTIVE LYMP": { "m_nc_ratio": 0.7059, "m_nuc_solidity": 0.823, "m_nuc_lobes": 10.7528, "m_cell_circularity": 0.4035, "m_nuc_glcm_contrast": 24.0705, "m_cyto_mean_hue": 0.5649 }
+  "BAND": { "m_nc_ratio": 0.8182, "m_nuc_solidity": 0.8438, "m_nuc_irregularity": 2.8136, "m_cell_circularity": 0.5086, "m_nuc_glcm_contrast": 24.0877, "m_cyto_mean_hue": 0.4755 },
+  "BASOPHIL": { "m_nc_ratio": 0.9369, "m_nuc_solidity": 0.7949, "m_nuc_irregularity": 2.6014, "m_cell_circularity": 0.4018, "m_nuc_glcm_contrast": 25.4351, "m_cyto_mean_hue": 0.4325 },
+  "BLAST": { "m_nc_ratio": 0.8573, "m_nuc_solidity": 0.8157, "m_nuc_irregularity": 2.6811, "m_cell_circularity": 0.4014, "m_nuc_glcm_contrast": 20.3362, "m_cyto_mean_hue": 0.5077 },
+  "EOSINOPHIL": { "m_nc_ratio": 0.937, "m_nuc_solidity": 0.7905, "m_nuc_irregularity": 2.4849, "m_cell_circularity": 0.3586, "m_nuc_glcm_contrast": 27.4274, "m_cyto_mean_hue": 0.3796 },
+  "LYMPHOCYTE": { "m_nc_ratio": 0.9426, "m_nuc_solidity": 0.8701, "m_nuc_irregularity": 6.3777, "m_cell_circularity": 0.5512, "m_nuc_glcm_contrast": 26.8829, "m_cyto_mean_hue": 0.4103 },
+  "METAMYELOCYTE": { "m_nc_ratio": 0.8763, "m_nuc_solidity": 0.762, "m_nuc_irregularity": 2.1397, "m_cell_circularity": 0.3079, "m_nuc_glcm_contrast": 23.7378, "m_cyto_mean_hue": 0.4678 },
+  "MONOCYTE": { "m_nc_ratio": 0.8553, "m_nuc_solidity": 0.7782, "m_nuc_irregularity": 1.9373, "m_cell_circularity": 0.3495, "m_nuc_glcm_contrast": 25.6428, "m_cyto_mean_hue": 0.4847 },
+  "MYELOCYTE": { "m_nc_ratio": 0.801, "m_nuc_solidity": 0.7748, "m_nuc_irregularity": 1.9262, "m_cell_circularity": 0.2926, "m_nuc_glcm_contrast": 23.5, "m_cyto_mean_hue": 0.4743 },
+  "NEUTROPHIL": { "m_nc_ratio": 0.4129, "m_nuc_solidity": 0.8179, "m_nuc_irregularity": 2.8597, "m_cell_circularity": 0.3602, "m_nuc_glcm_contrast": 24.9132, "m_cyto_mean_hue": 0.6036 },
+  "NRBC": { "m_nc_ratio": 0.895, "m_nuc_solidity": 0.9144, "m_nuc_irregularity": 8.3530, "m_cell_circularity": 0.6578, "m_nuc_glcm_contrast": 22.5313, "m_cyto_mean_hue": 0.3558 },
+  "OTHER": { "m_nc_ratio": 0.6327, "m_nuc_solidity": 0.8114, "m_nuc_irregularity": 4.8920, "m_cell_circularity": 0.3992, "m_nuc_glcm_contrast": 32.5506, "m_cyto_mean_hue": 0.3927 },
+  "PLASMA": { "m_nc_ratio": 0.4321, "m_nuc_solidity": 0.9306, "m_nuc_irregularity": 0.7481, "m_cell_circularity": 0.618, "m_nuc_glcm_contrast": 18.2598, "m_cyto_mean_hue": 0.6795 },
+  "PROMYELOCYTE": { "m_nc_ratio": 0.32, "m_nuc_solidity": 0.9106, "m_nuc_irregularity": 1.4423, "m_cell_circularity": 0.3573, "m_nuc_glcm_contrast": 15.0935, "m_cyto_mean_hue": 0.6887 },
+  "REACTIVE LYMP": { "m_nc_ratio": 0.7059, "m_nuc_solidity": 0.823, "m_nuc_irregularity": 2.6519, "m_cell_circularity": 0.4035, "m_nuc_glcm_contrast": 24.0705, "m_cyto_mean_hue": 0.5649 }
 };
 
 // ── TRAINING FREQUENCY WEIGHTS ─────────────────────────
@@ -3038,11 +3038,11 @@ function toast(msg,ms=2800){
 
 // ── MORPHOMETRY PANEL ──────────────────────────────────
 const MORPH_AXES = [
-  'm_nc_ratio', 'm_nuc_solidity', 'm_nuc_lobes',
+  'm_nc_ratio', 'm_nuc_solidity', 'm_nuc_irregularity',
   'm_cell_circularity', 'm_nuc_glcm_contrast', 'm_cyto_mean_hue'
 ];
 const MORPH_AXIS_LABELS = [
-  'N:C ratio', 'nuc solidity', 'lobularity',
+  'N:C ratio', 'nuc solidity', 'Nuc Shape',
   'circularity', 'chromatin', 'cyto hue'
 ];
 const RCX=160, RCY=150, RR=90, RLR=115;
@@ -3053,6 +3053,13 @@ function normMorph(axis, value){
   const {min,max}=MORPH_RANGES[axis];
   if(max===min) return 0;
   return Math.min(1,Math.max(0,(value-min)/(max-min)));
+}
+
+function derivedMorph(row){
+  const irregularity=(row.m_nuc_area>0)
+    ?row.m_nuc_convex_deficiency/row.m_nuc_area
+    :null;
+  return {m_nuc_irregularity:irregularity};
 }
 
 function buildRadarSVG(){
@@ -3139,7 +3146,8 @@ function updateRadarSVG(row, cellLabel){
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
 
-  const cellVals=MORPH_AXES.map(ax=>normMorph(ax,parseFloat(row[ax])));
+  const derived=derivedMorph(row);
+  const cellVals=MORPH_AXES.map(ax=>normMorph(ax,ax in derived?derived[ax]:parseFloat(row[ax])));
   const avgEntry=MORPH_AVERAGES[cellLabel]||{};
   const avgVals=MORPH_AXES.map(ax=>normMorph(ax,avgEntry[ax]??null));
 
@@ -3188,7 +3196,7 @@ function openMorphPanel(row){
     const fmt1=v=>(v===null||v===undefined||isNaN(v))?'—':parseFloat(v).toFixed(1);
 
     document.getElementById('mp-nc').textContent=fmt2(row.m_nc_ratio);
-    document.getElementById('mp-lobes').textContent=fmt1(row.m_nuc_lobes);
+    document.getElementById('mp-lobes').textContent=fmt2(derivedMorph(row).m_nuc_irregularity);
     document.getElementById('mp-solid').textContent=fmt2(row.m_nuc_solidity);
     document.getElementById('mp-circ').textContent=fmt2(row.m_cell_circularity);
 
@@ -3718,7 +3726,7 @@ function dcExportCSV(){
                 <p id="mp-nc" style="font-size:20px;font-weight:600;font-family:monospace;margin:0;color:var(--text)"></p>
             </div>
             <div style="background:var(--surface2);border-radius:8px;padding:10px 6px;text-align:center">
-                <p style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 2px">lobes</p>
+                <p style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 2px">nuc shape</p>
                 <p id="mp-lobes" style="font-size:20px;font-weight:600;font-family:monospace;margin:0;color:var(--text)"></p>
             </div>
             <div style="background:var(--surface2);border-radius:8px;padding:10px 6px;text-align:center">
