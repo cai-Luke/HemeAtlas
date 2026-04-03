@@ -3245,22 +3245,34 @@ function updateRadarSVG(row, cellLabel){
   const avgEntry=MORPH_AVERAGES[cellLabel]||{};
   const avgVals=MORPH_AXES.map(ax=>normMorph(ax,avgEntry[ax]??null));
 
-  document.getElementById('mp-radar-cell').setAttribute('points',ppts(cellVals));
   document.getElementById('mp-radar-avg').setAttribute('points',ppts(avgVals));
 
+  const cellPoly=document.getElementById('mp-radar-cell');
   const dotsG=document.getElementById('mp-radar-dots');
   dotsG.innerHTML='';
-  cellVals.forEach((v,i)=>{
-    const [x,y]=rpt(RR*v,RANGLES[i]);
-    const c=document.createElementNS(NS,'circle');
-    c.setAttribute('cx',x.toFixed(1));
-    c.setAttribute('cy',y.toFixed(1));
-    c.setAttribute('r','3.5');
-    c.setAttribute('fill','#1D9E75');
-    c.setAttribute('stroke','var(--surface)');
-    c.setAttribute('stroke-width','2');
-    dotsG.appendChild(c);
-  });
+  const DURATION=480;
+  const start=performance.now();
+  function frame(now){
+    const raw=Math.min((now-start)/DURATION,1);
+    const t=1-Math.pow(1-raw,2);
+    cellPoly.setAttribute('points',ppts(cellVals.map(v=>v*t)));
+    if(raw<1){
+      requestAnimationFrame(frame);
+    } else {
+      cellVals.forEach((v,i)=>{
+        const [x,y]=rpt(RR*v,RANGLES[i]);
+        const c=document.createElementNS(NS,'circle');
+        c.setAttribute('cx',x.toFixed(1));
+        c.setAttribute('cy',y.toFixed(1));
+        c.setAttribute('r','3.5');
+        c.setAttribute('fill','#1D9E75');
+        c.setAttribute('stroke','var(--surface)');
+        c.setAttribute('stroke-width','2');
+        dotsG.appendChild(c);
+      });
+    }
+  }
+  requestAnimationFrame(frame);
 }
 
 function openMorphPanel(row){
@@ -3311,25 +3323,26 @@ function openMorphPanel(row){
         const el=document.getElementById(id);
         el.classList.remove('mp-pulse');
         el.textContent=chipValues[i];
-        if(i===chipIds.length-1){
-          const rawParams=[
-            ['m_nuc_mean_l',fmt2(row.m_nuc_mean_l)],
-            ['m_cell_area',row.m_cell_area?Math.round(row.m_cell_area).toLocaleString():'—'],
-            ['m_cyto_mean_a',fmt2(row.m_cyto_mean_a)],
-            ['m_nuc_area',row.m_nuc_area?Math.round(row.m_nuc_area).toLocaleString():'—'],
-            ['m_nuc_glcm_contrast',fmt2(row.m_nuc_glcm_contrast)],
-            ['m_cell_major',fmt1(row.m_cell_major)],
-          ];
-          document.getElementById('mp-raw').innerHTML=rawParams.map(([k,v])=>`
-            <div style="display:flex;justify-content:space-between;align-items:baseline;
-                        padding:3px 0;border-bottom:0.5px solid var(--border)">
-              <span style="font-size:10px;color:var(--text3);font-family:monospace">${k}</span>
-              <span style="font-size:11px;font-weight:600;font-family:monospace">${v}</span>
-            </div>`).join('');
-          updateRadarSVG(row,effLabel);
-        }
       },400+i*60);
     });
+    const totalChipDelay=400+(chipIds.length-1)*60;
+    setTimeout(()=>{
+      const rawParams=[
+        ['m_nuc_mean_l',fmt2(row.m_nuc_mean_l)],
+        ['m_cell_area',row.m_cell_area?Math.round(row.m_cell_area).toLocaleString():'—'],
+        ['m_cyto_mean_a',fmt2(row.m_cyto_mean_a)],
+        ['m_nuc_area',row.m_nuc_area?Math.round(row.m_nuc_area).toLocaleString():'—'],
+        ['m_nuc_glcm_contrast',fmt2(row.m_nuc_glcm_contrast)],
+        ['m_cell_major',fmt1(row.m_cell_major)],
+      ];
+      document.getElementById('mp-raw').innerHTML=rawParams.map(([k,v])=>`
+        <div style="display:flex;justify-content:space-between;align-items:baseline;
+                    padding:3px 0;border-bottom:0.5px solid var(--border)">
+          <span style="font-size:10px;color:var(--text3);font-family:monospace">${k}</span>
+          <span style="font-size:11px;font-weight:600;font-family:monospace">${v}</span>
+        </div>`).join('');
+      updateRadarSVG(row,effLabel);
+    },totalChipDelay+350);
   }
 
   document.getElementById('morph-overlay').style.display='block';
