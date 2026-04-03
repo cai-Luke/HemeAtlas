@@ -104,11 +104,6 @@
   .cell-card .cc-label{font-size:11px;font-weight:600;color:var(--text2)}
   .cell-card .cc-sub{font-size:10px;color:var(--text4);margin-top:1px}
   .cell-card .cc-border-badge{position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 5px;letter-spacing:.3px}
-  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;color:var(--text3);text-align:center}
-  .empty-state .ei{font-size:40px;opacity:.4}
-  .empty-state h3{font-size:16px;font-weight:600;color:var(--text2)}
-  .empty-state p{font-size:13px;max-width:280px;line-height:1.7;color:var(--text3)}
-
   /* ── HUB ── */
   .hub{display:flex;flex-direction:column;align-items:center;gap:24px;padding:40px 20px;overflow-y:auto;height:100%}
   .hub.hidden{display:none!important}
@@ -147,7 +142,7 @@
   .about-placeholder{color:var(--text4);font-style:italic}
 
   /* ── DETAIL OVERLAY ── */
-  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
   .detail-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:880px;max-width:calc(100vw - 40px);height:82vh;max-height:660px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 
   /* ── DETAIL HEADER ── */
@@ -658,16 +653,11 @@
       <div class="sb-divider" id="sb-ab-divider" style="display:none"></div>
       <div class="sb-section" id="sb-ab-section" style="display:none">Tag Gallery</div>
       <div id="sb-tag-ref-wrap" style="display:none;padding:0 8px 6px">
-        <button class="tag-ref-btn" id="tag-ref-btn" onclick="showTagPoster()">🏷 Tag Reference</button>
+        <button class="tag-ref-btn" id="tag-ref-btn" onclick="showTagPoster()">🏷 Tag Gallery</button>
       </div>
       <div class="sb-list" id="sb-aberration-list" style="flex:0 0 auto;max-height:200px"></div>
     </div>
     <div class="main" id="main">
-      <div class="empty-state" id="empty-state">
-        <div class="ei">🔬</div>
-        <h3>Select a cell type</h3>
-        <p>Choose a category from the sidebar to begin browsing.</p>
-      </div>
       <div id="grid-area" class="hidden">
         <div class="grid-header">
           <div class="grid-title" id="grid-title"></div>
@@ -949,6 +939,7 @@
       <div class="dp-title" id="dp-title">—</div>
       <span class="dp-badge" id="dp-conf-badge"></span>
       <button class="dp-close" style="margin-left:4px;padding:4px 10px;width:auto;border-radius:var(--radius);font-size:11px;font-weight:700;color:var(--text3)" id="dp-compare-btn" onclick="openCompareFromDetail()">⇄ Compare</button>
+      <button class="dp-close" style="margin-left:4px;padding:4px 10px;width:auto;border-radius:var(--radius);font-size:11px;font-weight:700;color:var(--text3)" id="dp-morph-btn" onclick="openMorphFromDetail()" title="View morphometry data">📐 Morph</button>
       <button class="dp-close" onclick="closeDetail()">✕</button>
     </div>
     <div class="dp-body">
@@ -1056,12 +1047,14 @@ const ADJACENT = {
 
 // ── MORPHOMETRY CONSTANTS ──────────────────────────────
 const MORPH_RANGES = {
+
   "m_nc_ratio":           { "min": 0.1936, "max": 0.9783 },
   "m_nuc_solidity":       { "min": 0.65,   "max": 0.9799 },
   "m_nuc_lobes":          { "min": 1.0,    "max": 20.0   },
   "m_cell_circularity":   { "min": 0.1762, "max": 0.875  },
   "m_nuc_glcm_contrast":  { "min": 13.6512,"max": 34.6779 },
   "m_cyto_mean_b":        { "min": -3.3478,"max": 9.1406  }
+
 };
 
 const MORPH_AVERAGES = {
@@ -1121,6 +1114,8 @@ let S = {
   confFilter:'all',
   detailId:null,
   filteredList:[],  // filenames in current view after filters
+  lastUpdated:null,
+  _posterEntryFromHub:false,
 };
 
 // ── IMAGE URL ─────────────────────────────────────────
@@ -1157,6 +1152,11 @@ async function loadAtlas(){
       loaded++;
     }
     if(!loaded){ hintEl.textContent='⚠ No approved cells found in CSV.'; return; }
+    S.lastUpdated = null;
+    Object.values(S.records).forEach(r => {
+      const d = r.last_modified_date || r.path_date;
+      if(d && (!S.lastUpdated || d > S.lastUpdated)) S.lastUpdated = d;
+    });
     hintEl.textContent=`✓ ${loaded} cells loaded — launching…`;
     setTimeout(()=>launchApp(),300);
   } catch(err) {
@@ -1174,12 +1174,17 @@ function launchApp(){
   buildRadarSVG();
   buildSidebar();
   buildAberrationSidebar();
-  buildHub();
-  document.getElementById('hub').classList.remove('hidden');
+  showHub();
   updateStats();
 }
 
 // ── HUB ───────────────────────────────────────────────
+function showHub(){
+  renderHub();
+  document.getElementById('hub').classList.remove('hidden');
+  document.getElementById('grid-area').classList.add('hidden');
+}
+
 function hideHub(){
   const h=document.getElementById('hub');
   if(h) h.classList.add('hidden');
@@ -1188,34 +1193,24 @@ function hideHub(){
 }
 
 function buildBrowseMosaic(){
-  const all=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
-
-  function byTag(tag){
-    const matches=all.filter(r=>{
-      const tags=(r.tags||'').split(',').map(t=>t.trim().toLowerCase());
-      return tags.includes(tag.toLowerCase());
-    });
-    return matches.length?matches[Math.floor(Math.random()*matches.length)]:null;
+  const typeOrder=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
+  const byType={};
+  Object.values(S.records).forEach(r=>{
+    const lbl=effectiveLabel(r);
+    if(lbl){byType[lbl]=byType[lbl]||[];byType[lbl].push(r);}
+  });
+  const result=[];
+  for(const type of typeOrder){
+    if(!byType[type]||!byType[type].length)continue;
+    const pool=byType[type];
+    const rec=pool[Math.floor(Math.random()*pool.length)];
+    result.push({label:CELL_DISPLAY[type]||type,rec});
+    if(result.length>=9)break;
   }
-
-  function byType(type){
-    const matches=Object.values(S.records).filter(r=>effectiveLabel(r)===type);
-    return matches.length?matches[Math.floor(Math.random()*matches.length)]:null;
-  }
-
-  const fallback=()=>all[Math.floor(Math.random()*all.length)];
-
-  return [
-    {label:'Mott cells',      rec:byTag('mott cells')      ||fallback()},
-    {label:'Auer rods',       rec:byTag('auer rods')       ||fallback()},
-    {label:'Hypergranulation',rec:byTag('hypergranulation')||fallback()},
-    {label:'Pelger-Huët',     rec:byTag('pelger huet')     ||fallback()},
-    {label:'Nucleoli',        rec:byTag('nucleoli')        ||fallback()},
-    {label:'Plasma cell',     rec:byType('PLASMA')         ||fallback()},
-  ];
+  return result;
 }
 
-function buildHub(){
+function renderHub(){
   const hub=document.getElementById('hub');
   if(!hub) return;
   const mosaic=buildBrowseMosaic();
@@ -1248,24 +1243,111 @@ function buildHub(){
           <div class="hub-keypad-preview">${keypadHtml}</div>
         </div>
       </div>
-    </div>
-    <div class="hub-secondary">
-      <div class="hub-tile" onclick="setMode('compare')">
-        <div class="hub-tile-icon">⇄</div>
-        <div class="hub-tile-title">Compare</div>
-        <div class="hub-tile-desc">Study two cell types side by side</div>
-      </div>
-      <div class="hub-tile" onclick="setMode('diff')">
-        <div class="hub-tile-icon">🧮</div>
-        <div class="hub-tile-title">Diff Counter</div>
-        <div class="hub-tile-desc">100-cell WBC tally with RBC morphology grading</div>
-      </div>
-      <div class="hub-tile" onclick="openAbout()">
-        <div class="hub-tile-icon">ⓘ</div>
-        <div class="hub-tile-title">About</div>
-        <div class="hub-tile-desc">Methods, datasets, and attribution</div>
-      </div>
     </div>`;
+
+  // ── hub-secondary (built via JS so we can appendChild tag tile) ──
+  const hubSecondaryEl=document.createElement('div');
+  hubSecondaryEl.className='hub-secondary';
+  hubSecondaryEl.innerHTML=`
+    <div class="hub-tile" onclick="setMode('compare')">
+      <div class="hub-tile-icon">⇄</div>
+      <div class="hub-tile-title">Compare</div>
+      <div class="hub-tile-desc">Study two cell types side by side</div>
+    </div>
+    <div class="hub-tile" onclick="setMode('diff')">
+      <div class="hub-tile-icon">🧮</div>
+      <div class="hub-tile-title">Diff Counter</div>
+      <div class="hub-tile-desc">100-cell WBC tally with RBC morphology grading</div>
+    </div>
+    <div class="hub-tile" onclick="openAbout()">
+      <div class="hub-tile-icon">ⓘ</div>
+      <div class="hub-tile-title">About</div>
+      <div class="hub-tile-desc">Methods, datasets, and attribution</div>
+    </div>`;
+
+  // Tag Gallery tile with featured tag previews
+  const featuredTags=['auer rods','chediak higashi'];
+  const tagPreviews=featuredTags.map(tag=>{
+    const recs=_recsForTag(tag);
+    const rec=recs[Math.floor(Math.random()*recs.length)];
+    const displayTag=tag.replace(/\b\w/g,c=>c.toUpperCase());
+    return rec
+      ? `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+           <img src="${getImageUrl(rec.filename)}" alt="${esc(displayTag)}"
+                style="width:52px;height:52px;object-fit:cover;border-radius:6px;
+                       border:1.5px solid var(--border);background:var(--surface2)">
+           <span style="font-size:9px;color:var(--text3);text-align:center;
+                        max-width:56px;line-height:1.3">${esc(displayTag)}</span>
+         </div>`
+      : '';
+  }).join('');
+  const tagTileEl=document.createElement('div');
+  tagTileEl.className='hub-tile';
+  tagTileEl.setAttribute('data-tile','tags');
+  tagTileEl.onclick=()=>openTagGalleryFromHub();
+  tagTileEl.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="hub-tile-icon">🏷</div>
+        <div class="hub-tile-title">Tag Gallery</div>
+        <div class="hub-tile-desc">Morphology aberrations with image examples</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;margin-left:8px">${tagPreviews}</div>
+    </div>`;
+  const hasTags=Object.values(S.records).some(r=>r.tags&&r.tags.trim());
+  if(!hasTags) tagTileEl.style.display='none';
+  hubSecondaryEl.appendChild(tagTileEl);
+  hub.appendChild(hubSecondaryEl);
+
+  // ── Cell Census ──
+  hub.insertAdjacentHTML('beforeend',`
+    <div class="hub-census" style="width:100%;max-width:900px;background:var(--surface);
+         border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;
+                  padding:14px 20px 10px;border-bottom:0.5px solid var(--border)">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">Cell Census</span>
+        <span id="hub-updated" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div id="hub-census-rows" style="padding:8px 0"></div>
+    </div>`);
+
+  const updatedEl=document.getElementById('hub-updated');
+  if(updatedEl&&S.lastUpdated){
+    const d=new Date(S.lastUpdated);
+    const label=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    updatedEl.textContent=`Updated ${label}`;
+  }
+
+  const census={};
+  Object.values(S.records).forEach(r=>{
+    const lbl=effectiveLabel(r);
+    if(lbl) census[lbl]=(census[lbl]||0)+1;
+  });
+  const maxCount=Math.max(...Object.values(census));
+  const censusOrder=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
+  const censusRows=document.getElementById('hub-census-rows');
+  censusOrder.forEach(key=>{
+    const count=census[key]||0;
+    if(!count)return;
+    const pct=Math.round((count/maxCount)*100);
+    const displayName=CELL_DISPLAY[key]||key;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:5px 20px;cursor:pointer;transition:background .12s';
+    row.onmouseenter=()=>row.style.background='var(--surface2)';
+    row.onmouseleave=()=>row.style.background='';
+    row.onclick=()=>{setMode('browse');setView(key);};
+    row.innerHTML=`
+      <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);
+                   width:130px;flex-shrink:0;white-space:nowrap">${esc(displayName)}</span>
+      <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--accent);
+                    border-radius:3px;opacity:0.7"></div>
+      </div>
+      <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);
+                   width:44px;text-align:right;flex-shrink:0">${count.toLocaleString()}</span>`;
+    censusRows.appendChild(row);
+  });
+
   const trainImg=document.getElementById('hub-train-img');
   if(trainImg) applyRandomOrientation(trainImg);
 
@@ -1278,18 +1360,18 @@ function buildHub(){
   const STAGGER_MS=90;
 
   function rerollMosaic(){
-    const all=[...Object.values(S.records),...Object.values(S.aberrationRecords)];
     const imgs=document.querySelectorAll('.hub-mosaic img');
     if(!imgs.length) return;
+    const newSlots=buildBrowseMosaic();
     imgs.forEach((img,i)=>{
+      const slot=newSlots[i%newSlots.length];
+      if(!slot) return;
       setTimeout(()=>{
         img.style.opacity='0';
         setTimeout(()=>{
-          const rec=all[Math.floor(Math.random()*all.length)];
-          const label=effectiveLabel(rec);
-          img.src=getImageUrl(rec.filename);
-          img.title=esc(CELL_DISPLAY[label]||label);
-          img.alt=esc(CELL_DISPLAY[label]||label);
+          img.src=getImageUrl(slot.rec.filename);
+          img.title=esc(slot.label);
+          img.alt=esc(slot.label);
           img.style.opacity='1';
         },FADE_MS);
       },i*STAGGER_MS);
@@ -1391,7 +1473,6 @@ function setView(key){
   S.currentView=key;S.searchQuery='';
   hideHub();
   hidePoster();
-  document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('grid-area').classList.remove('hidden');
   document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
   let target;
@@ -1449,10 +1530,9 @@ let _gridIsTagView = false;
 let hubMosaicInterval = null;
 
 function renderGrid(){
-  const empty=document.getElementById('empty-state');
   const gridArea=document.getElementById('grid-area');
   hideHub();
-  if(!S.currentView){empty.classList.remove('hidden');gridArea.classList.add('hidden');return;}
+  if(!S.currentView){showHub();return;}
   const recs=filteredRecords();
   S.filteredList=recs.map(r=>r.filename);
   _gridIsTagView=S.currentView&&S.currentView.startsWith('abtag:');
@@ -1468,7 +1548,7 @@ function renderGrid(){
 
   if(!recs.length){
     grid.innerHTML=`<div style="grid-column:1/-1;padding:40px 0;text-align:center;color:var(--text4);font-size:13px">No cells match this filter.</div>`;
-    empty.classList.add('hidden');gridArea.classList.remove('hidden');return;
+    gridArea.classList.remove('hidden');return;
   }
 
   _gridRecs=recs;
@@ -1497,7 +1577,7 @@ function _makeCard(rec){
       <div class="cc-sub">${_gridIsTagView?esc(_lbl):esc(rec.filename)}</div>
     </div>
     ${isBorderline?'<div class="cc-border-badge">BORDERLINE</div>':''}`;
-  card.onclick=()=>openMorphPanel(rec);
+  card.onclick=()=>openDetail(rec.filename);
   return card;
 }
 
@@ -1601,6 +1681,10 @@ function openDetail(filename){
   document.getElementById('dp-next').disabled=idx>=S.filteredList.length-1;
 
   document.getElementById('detail-overlay').classList.remove('hidden');
+
+  const hasMorph = rec.m_seg_quality === 'good';
+  const morphBtn = document.getElementById('dp-morph-btn');
+  if (morphBtn) morphBtn.style.display = hasMorph ? '' : 'none';
 }
 
 function renderDetailInfo(rec,displayLbl){
@@ -1669,7 +1753,13 @@ function navDetail(dir){
   openDetail(S.filteredList[next]);
 }
 
-function closeDetail(){document.getElementById('detail-overlay').classList.add('hidden');S.detailId=null;}
+function openMorphFromDetail(){
+  if(!S.detailId)return;
+  const rec=S.records[S.detailId]||S.aberrationRecords[S.detailId];
+  if(!rec)return;
+  openMorphPanel(rec);
+}
+function closeDetail(){closeMorphPanel();document.getElementById('detail-overlay').classList.add('hidden');S.detailId=null;}
 function closeDetailIfBg(e){if(e.target===document.getElementById('detail-overlay'))closeDetail();}
 
 function openCompareFromDetail(){
@@ -1744,6 +1834,7 @@ function setMode(mode,opts={}){
   if(isTrain) showTrainerConfig();
   if(isCompare) initCompare(opts);
   if(isDiff) dcInit();
+  if(isBrowse && !S.currentView) showHub();
 }
 // ── COMPARE ────────────────────────────────────────────
 const CMP = {
@@ -3170,10 +3261,11 @@ function openMorphPanel(row){
   document.getElementById('mp-imageid').textContent=(row.image_id||'')+' · HemeAtlas';
 
   const badge=document.getElementById('mp-quality-badge');
-  const q=row.m_seg_quality||'';
-  badge.textContent='seg: '+(q||'—');
-  badge.style.background=q==='good'?'rgba(16,185,129,0.12)':'rgba(150,150,150,0.12)';
-  badge.style.color=q==='good'?'#0f7a5a':'var(--text3)';
+  const hasGoodSeg=(row.m_seg_quality||'')==='good';
+  badge.textContent=hasGoodSeg?'Morphometrics Computed':'';
+  badge.style.background=hasGoodSeg?'rgba(16,185,129,0.12)':'transparent';
+  badge.style.color=hasGoodSeg?'#0f7a5a':'transparent';
+  badge.style.border=hasGoodSeg?'1px solid rgba(16,185,129,0.25)':'none';
 
   const commentary=(row.path_commentary||'').trim();
   const hasCommentary=commentary.length>0;
@@ -3243,8 +3335,8 @@ function _recsForTag(tagLower){
 }
 
 function showTagPoster(){
+  S._posterEntryFromHub=false;
   hideHub();
-  document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('grid-area').classList.add('hidden');
   document.getElementById('poster-area').classList.remove('hidden');
   document.getElementById('tag-ref-btn').classList.add('active');
@@ -3265,7 +3357,7 @@ function buildTagPoster(){
   // Back button + title row
   const topRow=document.createElement('div');
   topRow.className='poster-back';
-  topRow.innerHTML='<button class="poster-back-btn" onclick="leavePoster()">← Browse</button><span class="poster-title">Tag Reference</span>';
+  topRow.innerHTML='<button class="poster-back-btn" onclick="leavePoster()">← Browse</button><span class="poster-title">Tag Gallery</span>';
   area.appendChild(topRow);
   // Accordion groups
   TAG_GROUPS.forEach((group,gi)=>{
@@ -3374,7 +3466,10 @@ function _tagChunkObserve(grid,st,tag){
 
 function leavePoster(){
   hidePoster();
-  if(S.currentView){
+  if(S._posterEntryFromHub){
+    S._posterEntryFromHub=false;
+    showHub();
+  } else if(S.currentView){
     document.getElementById('grid-area').classList.remove('hidden');
     document.querySelectorAll('.sb-item,.sb-all').forEach(el=>el.classList.remove('active'));
     let target;
@@ -3383,8 +3478,18 @@ function leavePoster(){
     else target=document.getElementById('sb-'+S.currentView);
     if(target)target.classList.add('active');
   } else {
-    document.getElementById('empty-state').classList.remove('hidden');
+    showHub();
   }
+}
+
+function openTagGalleryFromHub(){
+  S._posterEntryFromHub=true;
+  setMode('browse');
+  setTimeout(()=>{
+    _posterOpenGroups.clear();
+    _posterOpenGroups.add(0);
+    showTagPoster();
+  },80);
 }
 
 // ── DIFF COUNTER ────────────────────────────────────────
@@ -3671,12 +3776,12 @@ function dcExportCSV(){
 }
 </script>
 
-<div id="morph-overlay" onclick="closeMorphPanel()" style="display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,0)"></div>
+<div id="morph-overlay" onclick="closeMorphPanel()" style="display:none;position:fixed;inset:0;z-index:399;background:rgba(0,0,0,0)"></div>
 
 <div id="morph-panel" style="
     position:fixed;
     bottom:0;left:0;right:0;
-    z-index:300;
+    z-index:400;
     background:var(--surface);
     border-top:0.5px solid var(--border);
     border-radius:16px 16px 0 0;
