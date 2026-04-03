@@ -3170,10 +3170,11 @@ function openMorphPanel(row){
   document.getElementById('mp-imageid').textContent=(row.image_id||'')+' · HemeAtlas';
 
   const badge=document.getElementById('mp-quality-badge');
-  const q=row.m_seg_quality||'';
-  badge.textContent='seg: '+(q||'—');
-  badge.style.background=q==='good'?'rgba(16,185,129,0.12)':'rgba(150,150,150,0.12)';
-  badge.style.color=q==='good'?'#0f7a5a':'var(--text3)';
+  const hasGoodSeg=(row.m_seg_quality||'')==='good';
+  badge.textContent=hasGoodSeg?'Morphometrics Computed':'';
+  badge.style.background=hasGoodSeg?'rgba(16,185,129,0.12)':'transparent';
+  badge.style.color=hasGoodSeg?'#0f7a5a':'transparent';
+  badge.style.border=hasGoodSeg?'1px solid rgba(16,185,129,0.25)':'none';
 
   const commentary=(row.path_commentary||'').trim();
   const hasCommentary=commentary.length>0;
