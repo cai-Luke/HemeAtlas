@@ -267,6 +267,8 @@
   .tr-key-chip.correct-key{border-color:var(--green);background:var(--green-light);color:var(--green)}
   .tr-key-chip.pending-key{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);animation:pulse-key .6s ease infinite}
   @keyframes pulse-key{0%,100%{opacity:1}50%{opacity:.6}}
+  @keyframes mp-pulse{0%,100%{opacity:.3}50%{opacity:.9}}
+  .mp-pulse{animation:mp-pulse .6s ease infinite}
   .tr-next-btn{padding:9px 22px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#0f1117;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif;letter-spacing:.2px;box-shadow:0 0 16px rgba(124,158,248,.35)}
   .tr-next-btn:hover{background:var(--accent-hover);border-color:var(--accent-hover);box-shadow:0 0 22px rgba(124,158,248,.55);transform:translateY(-1px)}
   .tr-next-btn::after{content:' ↵';font-family:'DM Mono',monospace;font-size:11px;opacity:.7}
@@ -1263,18 +1265,22 @@ function renderHub(){
     </div>`;
 
   // Tag Gallery tile with featured tag previews
-  const featuredTags=['auer rods','chediak higashi'];
-  const tagPreviews=featuredTags.map(tag=>{
+  const featuredTags=[
+    {tag:'auer rods',label:'Auer Rods'},
+    {tag:'chediak higashi',label:'Chediak Higashi'},
+    {tag:'dohle bodies',label:'Döhle Bodies'},
+    {tag:'hypersegmentation',label:'Hypersegmentation'},
+  ];
+  const tagPreviews=featuredTags.map(({tag,label})=>{
     const recs=_recsForTag(tag);
     const rec=recs[Math.floor(Math.random()*recs.length)];
-    const displayTag=tag.replace(/\b\w/g,c=>c.toUpperCase());
     return rec
       ? `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-           <img src="${getImageUrl(rec.filename)}" alt="${esc(displayTag)}"
+           <img src="${getImageUrl(rec.filename)}" alt="${esc(label)}"
                 style="width:52px;height:52px;object-fit:cover;border-radius:6px;
                        border:1.5px solid var(--border);background:var(--surface2)">
            <span style="font-size:9px;color:var(--text3);text-align:center;
-                        max-width:56px;line-height:1.3">${esc(displayTag)}</span>
+                        max-width:56px;line-height:1.3">${esc(label)}</span>
          </div>`
       : '';
   }).join('');
@@ -1289,7 +1295,7 @@ function renderHub(){
         <div class="hub-tile-title">Tag Gallery</div>
         <div class="hub-tile-desc">Morphology aberrations with image examples</div>
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;margin-left:8px">${tagPreviews}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;flex-shrink:0;margin-left:8px">${tagPreviews}</div>
     </div>`;
   const hasTags=Object.values(S.records).some(r=>r.tags&&r.tags.trim());
   if(!hasTags) tagTileEl.style.display='none';
@@ -3284,27 +3290,46 @@ function openMorphPanel(row){
     const fmt2=v=>(v===null||v===undefined||isNaN(v))?'—':parseFloat(v).toFixed(2);
     const fmt1=v=>(v===null||v===undefined||isNaN(v))?'—':parseFloat(v).toFixed(1);
 
-    document.getElementById('mp-nc').textContent=fmt2(row.m_nc_ratio);
-    document.getElementById('mp-lobes').textContent=fmt2(derivedMorph(row).m_nuc_irregularity);
-    document.getElementById('mp-solid').textContent=fmt2(row.m_nuc_solidity);
-    document.getElementById('mp-circ').textContent=fmt2(row.m_cell_circularity);
+    // Skeleton phase — pulse placeholders while panel slides up
+    const chipIds=['mp-nc','mp-lobes','mp-solid','mp-circ'];
+    chipIds.forEach(id=>{
+      const el=document.getElementById(id);
+      el.textContent='···';
+      el.classList.add('mp-pulse');
+    });
+    document.getElementById('mp-raw').innerHTML='';
 
-    const rawParams=[
-      ['m_nuc_mean_l',fmt2(row.m_nuc_mean_l)],
-      ['m_cell_area',row.m_cell_area?Math.round(row.m_cell_area).toLocaleString():'—'],
-      ['m_cyto_mean_a',fmt2(row.m_cyto_mean_a)],
-      ['m_nuc_area',row.m_nuc_area?Math.round(row.m_nuc_area).toLocaleString():'—'],
-      ['m_nuc_glcm_contrast',fmt2(row.m_nuc_glcm_contrast)],
-      ['m_cell_major',fmt1(row.m_cell_major)],
+    // Reveal phase — stagger chip population after 400ms
+    const chipValues=[
+      fmt2(row.m_nc_ratio),
+      fmt2(derivedMorph(row).m_nuc_irregularity),
+      fmt2(row.m_nuc_solidity),
+      fmt2(row.m_cell_circularity),
     ];
-    document.getElementById('mp-raw').innerHTML=rawParams.map(([k,v])=>`
-      <div style="display:flex;justify-content:space-between;align-items:baseline;
-                  padding:3px 0;border-bottom:0.5px solid var(--border)">
-        <span style="font-size:10px;color:var(--text3);font-family:monospace">${k}</span>
-        <span style="font-size:11px;font-weight:600;font-family:monospace">${v}</span>
-      </div>`).join('');
-
-    updateRadarSVG(row,effLabel);
+    chipIds.forEach((id,i)=>{
+      setTimeout(()=>{
+        const el=document.getElementById(id);
+        el.classList.remove('mp-pulse');
+        el.textContent=chipValues[i];
+        if(i===chipIds.length-1){
+          const rawParams=[
+            ['m_nuc_mean_l',fmt2(row.m_nuc_mean_l)],
+            ['m_cell_area',row.m_cell_area?Math.round(row.m_cell_area).toLocaleString():'—'],
+            ['m_cyto_mean_a',fmt2(row.m_cyto_mean_a)],
+            ['m_nuc_area',row.m_nuc_area?Math.round(row.m_nuc_area).toLocaleString():'—'],
+            ['m_nuc_glcm_contrast',fmt2(row.m_nuc_glcm_contrast)],
+            ['m_cell_major',fmt1(row.m_cell_major)],
+          ];
+          document.getElementById('mp-raw').innerHTML=rawParams.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:baseline;
+                        padding:3px 0;border-bottom:0.5px solid var(--border)">
+              <span style="font-size:10px;color:var(--text3);font-family:monospace">${k}</span>
+              <span style="font-size:11px;font-weight:600;font-family:monospace">${v}</span>
+            </div>`).join('');
+          updateRadarSVG(row,effLabel);
+        }
+      },400+i*60);
+    });
   }
 
   document.getElementById('morph-overlay').style.display='block';
