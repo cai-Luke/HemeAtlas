@@ -493,6 +493,13 @@
   .tr-toggle-row.on .tr-switch{background:var(--accent-dim);border-color:var(--accent)}
   .tr-toggle-row.on .tr-switch::after{transform:translateX(16px);background:var(--accent)}
 
+  /* ── TRAINER QUEUE PREVIEW ── */
+  .tr-preview-row { display:flex; align-items:center; gap:8px; }
+  .tr-preview-label { font-size:11px; color:var(--text2); width:110px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tr-preview-bar-wrap { flex:1; height:6px; background:var(--surface3); border-radius:3px; overflow:hidden; }
+  .tr-preview-bar { height:100%; background:var(--accent); border-radius:3px; opacity:0.7; transition:width .3s ease; }
+  .tr-preview-pct { font-size:10px; font-family:'DM Mono',monospace; color:var(--text4); width:28px; text-align:right; flex-shrink:0; }
+
   /* ── TIMER ── */
   .tr-timer-wrap{width:100%;height:3px;background:var(--surface3);flex-shrink:0}
   .tr-timer-bar{height:100%;background:var(--accent);transition:width 1s linear;width:100%}
@@ -772,6 +779,17 @@
             ℹ Cell frequencies are normalized to a realistic mixed-caseload distribution, not your atlas proportions.
           </div>
           <div class="tr-keybind-table" id="tr-keybind-ref"></div>
+        </div>
+      </div>
+      <div id="tr-queue-preview" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:20px 24px;width:100%;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4)">What you'll see</span>
+          <span id="tr-preview-summary" style="font-size:11px;color:var(--text3);text-align:right;line-height:1.4;max-width:280px"></span>
+        </div>
+        <div id="tr-preview-bars" style="display:flex;flex-direction:column;gap:5px"></div>
+        <div id="tr-preview-curveball" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border:1px dashed var(--border2)">
+          <span style="font-size:13px">🎲</span>
+          <span style="font-size:11px;color:var(--text3);line-height:1.4">~10% surprise cells from the advanced types — answer <strong style="color:var(--text2)">not these</strong> to practice recognition</span>
         </div>
       </div>
     </div>
@@ -2125,6 +2143,7 @@ function trToggle(which){
     // If a session is running, restart with the new mode
     if(T.phase==='pending'||T.phase==='answered') startTrainer();
   }
+  buildQueuePreview();
 }
 
 // ── TIMER ───────────────────────────────────────────────
@@ -2212,6 +2231,64 @@ function showTrainerConfig(){
   document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
   document.getElementById('toggle-beginner').classList.toggle('on',T.beginnerMode);
   buildKeybindRef();
+  buildQueuePreview();
+}
+
+function buildQueuePreview(){
+  const barsEl = document.getElementById('tr-preview-bars');
+  const summaryEl = document.getElementById('tr-preview-summary');
+  const curveEl = document.getElementById('tr-preview-curveball');
+  if(!barsEl) return;
+
+  // Determine active cell types + weights (mirrors buildWeightedQueue logic)
+  const activeTypes = [];
+  CELLS.forEach(cell => {
+    const lbl = cell.name;
+    if(lbl === 'OTHER LYMP') return;
+    if(T.beginnerMode && !BEGINNER_TYPES.includes(lbl)) return;
+    if(lbl === 'OTHER'){
+      if(!T.includeOther) return;
+      activeTypes.push({ lbl, weight: 5, short: cell.short });
+      return;
+    }
+    const weight = TRAIN_FREQ[lbl] ?? 0;
+    if(weight === 0) return;
+    activeTypes.push({ lbl, weight, short: cell.short });
+  });
+
+  const totalWeight = activeTypes.reduce((s, t) => s + t.weight, 0);
+
+  // Build bar rows
+  barsEl.innerHTML = activeTypes.map(({ lbl, weight, short }) => {
+    const pct = totalWeight > 0 ? Math.round((weight / totalWeight) * 100) : 0;
+    return `<div class="tr-preview-row">
+      <span class="tr-preview-label">${esc(short)}</span>
+      <div class="tr-preview-bar-wrap"><div class="tr-preview-bar" style="width:${pct}%"></div></div>
+      <span class="tr-preview-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Summary sentence
+  const typeCount = activeTypes.length;
+  const topType = activeTypes.sort((a, b) => b.weight - a.weight)[0];
+  let summary = '';
+  if(T.beginnerMode){
+    summary = `5-part diff · neutrophils & lymphocytes most frequent`;
+  } else {
+    const topPct = totalWeight > 0 ? Math.round((topType.weight / totalWeight) * 100) : 0;
+    summary = `${typeCount} cell types · ${esc(topType.short)} most frequent (~${topPct}%)`;
+    if(T.includeOther) summary += ' · Other included';
+  }
+  summaryEl.textContent = summary;
+
+  // Curveball note
+  if(T.beginnerMode){
+    curveEl.classList.remove('hidden');
+    curveEl.style.display = 'flex';
+  } else {
+    curveEl.classList.add('hidden');
+    curveEl.style.display = 'none';
+  }
 }
 
 function buildKeybindRef(){
