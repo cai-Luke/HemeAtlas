@@ -503,6 +503,13 @@
   .tr-toggle-row.on .tr-switch{background:var(--accent-dim);border-color:var(--accent)}
   .tr-toggle-row.on .tr-switch::after{transform:translateX(16px);background:var(--accent)}
 
+  /* ── TRAINER QUEUE PREVIEW ── */
+  .tr-preview-row { display:flex; align-items:center; gap:8px; }
+  .tr-preview-label { font-size:11px; color:var(--text2); width:110px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tr-preview-bar-wrap { flex:1; height:6px; background:var(--surface3); border-radius:3px; overflow:hidden; }
+  .tr-preview-bar { height:100%; background:var(--accent); border-radius:3px; opacity:0.7; transition:width .3s ease; }
+  .tr-preview-pct { font-size:10px; font-family:'DM Mono',monospace; color:var(--text4); width:28px; text-align:right; flex-shrink:0; }
+
   /* ── TIMER ── */
   .tr-timer-wrap{width:100%;height:3px;background:var(--surface3);flex-shrink:0}
   .tr-timer-bar{height:100%;background:var(--accent);transition:width 1s linear;width:100%}
@@ -803,6 +810,17 @@
           </div>
         </div>
 
+      </div>
+      <div id="tr-queue-preview" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:20px 24px;width:100%;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4)">What you'll see</span>
+          <span id="tr-preview-summary" style="font-size:11px;color:var(--text3);text-align:right;line-height:1.4;max-width:280px"></span>
+        </div>
+        <div id="tr-preview-bars" style="display:flex;flex-direction:column;gap:5px"></div>
+        <div id="tr-preview-curveball" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border:1px dashed var(--border2)">
+          <span style="font-size:13px">🎲</span>
+          <span style="font-size:11px;color:var(--text3);line-height:1.4">~10% surprise cells from the advanced types — answer <strong style="color:var(--text2)">not these</strong> to practice recognition</span>
+        </div>
       </div>
     </div>
     <!-- SESSION -->
