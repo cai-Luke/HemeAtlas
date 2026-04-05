@@ -219,7 +219,7 @@
   .trainer.hidden{display:none!important}
 
   /* ── TRAINER CONFIG ── */
-  .tr-config{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 40px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px}
+  .tr-config{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 40px;width:100%;display:flex;flex-direction:column;gap:20px}
   .tr-config-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--text);margin-bottom:4px}
   .tr-config-sub{font-size:13px;color:var(--text3);line-height:1.7;margin-top:-10px}
   .tr-field-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin-bottom:8px}
@@ -233,6 +233,16 @@
   .tr-kb-item{padding:7px 4px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);text-align:center}
   .tr-kb-key{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)}
   .tr-kb-name{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.3}
+
+  /* ── TRAINER QUEUE PREVIEW ── */
+  .tr-preview-row{display:flex;align-items:center;gap:8px}
+  .tr-preview-label{font-size:11px;color:var(--text2);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tr-preview-bar-wrap{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+  .tr-preview-bar{height:100%;background:var(--accent);border-radius:3px;opacity:0.7;transition:width .3s ease}
+  .tr-preview-pct{font-size:10px;font-family:'DM Mono',monospace;color:var(--text4);width:28px;text-align:right;flex-shrink:0}
+  @media(max-width:900px){
+    #tr-config-screen > div{grid-template-columns:1fr!important}
+  }
 
   /* ── TRAINER HUD ── */
   .tr-hud{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;gap:10px}
@@ -725,54 +735,74 @@
   <!-- TRAINER -->
   <div class="trainer hidden" id="trainer">
     <!-- CONFIG -->
-    <div id="tr-config-screen" style="width:100%;max-width:520px;padding-top:16px">
-      <div class="tr-config">
-        <div>
-          <div class="tr-config-title">Differential Trainer</div>
-          <div class="tr-config-sub">Identify each cell using the correct keyboard shortcut — the same keys used in the classifier. No hints, no choices.</div>
-        </div>
-        <button class="tr-start-btn" id="tr-start-btn" onclick="startTrainer()">Start Session →</button>
-        <div>
-          <div class="tr-field-label">Session length</div>
-          <div class="tr-count-row">
-            <button class="tr-count-btn selected" data-n="100" onclick="trSelectCount(this)">100 cells</button>
-            <button class="tr-count-btn" data-n="0" onclick="trSelectCount(this)">Endless</button>
-            <button class="tr-count-btn" data-n="-1" onclick="trSelectCount(this)">♟ Chess Clock</button>
-          </div>
-        </div>
-        <div>
-          <div class="tr-field-label">Difficulty options</div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div class="tr-toggle-row" id="toggle-timed" onclick="trToggle('timed')">
-              <div class="tr-toggle-text">
-                <div class="tr-toggle-name">⏱ Timed — 10 seconds per cell</div>
-                <div class="tr-toggle-desc">Auto-submits as a miss if no key is pressed in time. Simulates clinical time pressure.</div>
-              </div>
-              <div class="tr-switch"></div>
-            </div>
-            <div class="tr-toggle-row" id="toggle-other" onclick="trToggle('other')">
-              <div class="tr-toggle-text">
-                <div class="tr-toggle-name">⚗ Include "Other" category</div>
-                <div class="tr-toggle-desc">Adds artifacts, unacceptable cells, and atypical populations. Not recommended until the standard 14 classes are solid.</div>
-              </div>
-              <div class="tr-switch"></div>
-            </div>
-            <div class="tr-toggle-row" id="toggle-beginner" onclick="trToggle('beginner')">
-              <div class="tr-toggle-text">
-                <div class="tr-toggle-name">🎓 Beginner Mode — 5-Part Diff</div>
-                <div class="tr-toggle-desc">Focus on the 5 basic WBC types (neutrophil, lymphocyte, monocyte, eosinophil, basophil) with ~10% surprise cells. Replaces the full keyboard with a simple 6-button panel.</div>
-              </div>
-              <div class="tr-switch"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="tr-field-label">Keyboard reference — confirm you know these before starting</div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">
-            ℹ Cell frequencies are normalized to a realistic mixed-caseload distribution, not your atlas proportions.
+    <div id="tr-config-screen" style="width:100%;max-width:1100px;padding-top:24px">
+      <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:16px;align-items:start">
+
+        <!-- LEFT: Keyboard Reference -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="tr-field-label" style="margin-bottom:0">Keyboard Reference</div>
+            <div style="font-size:11px;color:var(--text4);margin-top:5px;line-height:1.5">Same keys used in the classifier — memorize these before starting.</div>
           </div>
           <div class="tr-keybind-table" id="tr-keybind-ref"></div>
         </div>
+
+        <!-- CENTER: Main Settings -->
+        <div class="tr-config">
+          <div>
+            <div class="tr-config-title">Differential Trainer</div>
+            <div class="tr-config-sub">Identify each cell using the correct keyboard shortcut — the same keys used in the classifier. No hints, no choices.</div>
+          </div>
+          <button class="tr-start-btn" id="tr-start-btn" onclick="startTrainer()">Start Session →</button>
+          <div>
+            <div class="tr-field-label">Session length</div>
+            <div class="tr-count-row">
+              <button class="tr-count-btn selected" data-n="100" onclick="trSelectCount(this)">100 cells</button>
+              <button class="tr-count-btn" data-n="0" onclick="trSelectCount(this)">Endless</button>
+              <button class="tr-count-btn" data-n="-1" onclick="trSelectCount(this)">♟ Chess Clock</button>
+            </div>
+          </div>
+          <div>
+            <div class="tr-field-label">Difficulty options</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="tr-toggle-row" id="toggle-timed" onclick="trToggle('timed')">
+                <div class="tr-toggle-text">
+                  <div class="tr-toggle-name">⏱ Timed — 10 seconds per cell</div>
+                  <div class="tr-toggle-desc">Auto-submits as a miss if no key is pressed in time. Simulates clinical time pressure.</div>
+                </div>
+                <div class="tr-switch"></div>
+              </div>
+              <div class="tr-toggle-row" id="toggle-other" onclick="trToggle('other')">
+                <div class="tr-toggle-text">
+                  <div class="tr-toggle-name">⚗ Include "Other" category</div>
+                  <div class="tr-toggle-desc">Adds artifacts, unacceptable cells, and atypical populations. Not recommended until the standard 14 classes are solid.</div>
+                </div>
+                <div class="tr-switch"></div>
+              </div>
+              <div class="tr-toggle-row" id="toggle-beginner" onclick="trToggle('beginner')">
+                <div class="tr-toggle-text">
+                  <div class="tr-toggle-name">🎓 Beginner Mode — 5-Part Diff</div>
+                  <div class="tr-toggle-desc">Focus on the 5 basic WBC types (neutrophil, lymphocyte, monocyte, eosinophil, basophil) with ~10% surprise cells. Replaces the full keyboard with a simple 6-button panel.</div>
+                </div>
+                <div class="tr-switch"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Queue Preview -->
+        <div id="tr-queue-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="tr-field-label" style="margin-bottom:0">What you'll see</div>
+            <div id="tr-preview-summary" style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5"></div>
+          </div>
+          <div id="tr-preview-bars" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div id="tr-preview-curveball" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border:1px dashed var(--border2)">
+            <span style="font-size:13px">🎲</span>
+            <span style="font-size:11px;color:var(--text3);line-height:1.4">~10% surprise cells from the advanced types — answer <strong style="color:var(--text2)">not these</strong> to practice recognition</span>
+          </div>
+        </div>
+
       </div>
     </div>
     <!-- SESSION -->
@@ -2125,6 +2155,7 @@ function trToggle(which){
     // If a session is running, restart with the new mode
     if(T.phase==='pending'||T.phase==='answered') startTrainer();
   }
+  buildQueuePreview();
 }
 
 // ── TIMER ───────────────────────────────────────────────
@@ -2212,6 +2243,53 @@ function showTrainerConfig(){
   document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
   document.getElementById('toggle-beginner').classList.toggle('on',T.beginnerMode);
   buildKeybindRef();
+  buildQueuePreview();
+}
+
+function buildQueuePreview(){
+  const barsEl=document.getElementById('tr-preview-bars');
+  const summaryEl=document.getElementById('tr-preview-summary');
+  const curveEl=document.getElementById('tr-preview-curveball');
+  if(!barsEl)return;
+
+  const activeTypes=[];
+  CELLS.forEach(cell=>{
+    const lbl=cell.name;
+    if(lbl==='OTHER LYMP')return;
+    if(T.beginnerMode&&!BEGINNER_TYPES.includes(lbl))return;
+    if(lbl==='OTHER'){
+      if(!T.includeOther)return;
+      activeTypes.push({lbl,weight:5,short:cell.short});
+      return;
+    }
+    const weight=TRAIN_FREQ[lbl]??0;
+    if(weight===0)return;
+    activeTypes.push({lbl,weight,short:cell.short});
+  });
+
+  activeTypes.sort((a,b)=>b.weight-a.weight);
+  const totalWeight=activeTypes.reduce((s,t)=>s+t.weight,0);
+
+  barsEl.innerHTML=activeTypes.map(({weight,short})=>{
+    const pct=totalWeight>0?Math.round((weight/totalWeight)*100):0;
+    return `<div class="tr-preview-row">
+      <span class="tr-preview-label">${esc(short)}</span>
+      <div class="tr-preview-bar-wrap"><div class="tr-preview-bar" style="width:${pct}%"></div></div>
+      <span class="tr-preview-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  const top=activeTypes[0];
+  const topPct=totalWeight>0?Math.round((top.weight/totalWeight)*100):0;
+  if(T.beginnerMode){
+    summaryEl.textContent=`5 cell types · neutrophils & lymphocytes most frequent`;
+  } else {
+    summaryEl.textContent=`${activeTypes.length} cell types · ${top.short} most frequent (~${topPct}%)${T.includeOther?' · Other included':''}`;
+  }
+
+  const showCurve=T.beginnerMode;
+  curveEl.classList.toggle('hidden',!showCurve);
+  curveEl.style.display=showCurve?'flex':'none';
 }
 
 function buildKeybindRef(){
