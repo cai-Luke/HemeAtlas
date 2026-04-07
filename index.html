@@ -2160,8 +2160,9 @@ function trToggle(which){
   } else if(which==='beginner'){
     T.beginnerMode=!T.beginnerMode;
     document.getElementById('toggle-beginner').classList.toggle('on',T.beginnerMode);
-    // If a session is running, restart with the new mode
-    if(T.phase==='pending'||T.phase==='answered') startTrainer();
+    // If a session is actively running, restart with the new mode
+    const sessionVisible = !document.getElementById('tr-session-screen').classList.contains('hidden');
+    if(sessionVisible && (T.phase==='pending'||T.phase==='answered')) startTrainer();
   }
   buildQueuePreview();
 }
@@ -2246,6 +2247,7 @@ function showTrainerConfig(){
   document.getElementById('tr-report-screen').classList.add('hidden');
   hideTimer(); ccStop();
   document.getElementById('cc-bank').classList.add('hidden');
+  T.phase = 'idle';
   // Sync toggle visual state to T
   document.getElementById('toggle-timed').classList.toggle('on',T.timedMode);
   document.getElementById('toggle-other').classList.toggle('on',T.includeOther);
