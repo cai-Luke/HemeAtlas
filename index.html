@@ -1173,12 +1173,12 @@ async function loadAtlas(){
     const resp = await fetch(CSV_URL);
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
-    const lines = text.replace(/\r\n|\r/g,'\n').split('\n').filter(l=>l.trim());
-    if(lines.length<2){ hintEl.textContent='⚠ CSV appears empty.'; return; }
-    const headers = parseRow(lines[0]);
+    const rows = parseCSV(text);
+    if(rows.length<2){ hintEl.textContent='⚠ CSV appears empty.'; return; }
+    const headers = rows[0];
     let loaded=0;
-    for(let i=1;i<lines.length;i++){
-      const vals=parseRow(lines[i]);
+    for(let i=1;i<rows.length;i++){
+      const vals=rows[i];
       if(vals.length<2) continue;
       const rec={};
       headers.forEach((h,j)=>{rec[h]=vals[j]||'';});
@@ -1843,15 +1843,26 @@ document.addEventListener('wheel',e=>{
 
 
 // ── CSV PARSE ──────────────────────────────────────────
-function parseRow(row){
-  const res=[];let cur='';let inQ=false;
-  for(let i=0;i<row.length;i++){
-    const c=row[i];
-    if(c==='"'){if(inQ&&row[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
-    else if(c===','&&!inQ){res.push(cur);cur='';}
-    else cur+=c;
+function parseCSV(text){
+  const rows=[];
+  let cur=[],val='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(c==='"'){
+      if(inQ&&text[i+1]==='"'){val+='"';i++;}
+      else{inQ=!inQ;}
+    } else if(c===','&&!inQ){
+      cur.push(val);val='';
+    } else if((c==='\n'||c==='\r')&&!inQ){
+      if(c==='\r'&&text[i+1]==='\n') i++;
+      if(cur.length||val.length){cur.push(val);rows.push(cur);}
+      cur=[];val='';
+    } else {
+      val+=c;
+    }
   }
-  res.push(cur);return res;
+  if(cur.length||val.length){cur.push(val);rows.push(cur);}
+  return rows;
 }
 
 // ── MODE TOGGLE ────────────────────────────────────────
@@ -3636,6 +3647,8 @@ const RBC_GROUPS = [
 const RBC_FEATURES = RBC_GROUPS.flatMap(g=>g.features);
 const DC_GRADES = ['None','1+','2+','3+'];
 
+let dcAudioCtx = null;
+
 const DC = {
   counts: Object.fromEntries(CELLS.map(c=>[c.name,0])),
   history: [],
@@ -3727,7 +3740,9 @@ function dcUpdateTotal(){
 
 function dcPlayCompleteSound(){
   try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(!dcAudioCtx) dcAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(dcAudioCtx.state==='suspended') dcAudioCtx.resume();
+    const ctx=dcAudioCtx;
     const play=(freq,start,dur)=>{
       const osc=ctx.createOscillator();
       const gain=ctx.createGain();
@@ -3849,9 +3864,9 @@ function dcPrintReport(){
     : '<h3 style="margin:20px 0 8px;color:#888">RBC Morphology</h3><p style="color:#888;font-size:13px">No findings recorded.</p>';
 
   const metaParts=[];
-  if(name) metaParts.push('<strong>Student:</strong> '+name);
+  if(name) metaParts.push('<strong>Student:</strong> '+esc(name));
   metaParts.push('<strong>Date:</strong> '+(date||'—'));
-  if(caseId) metaParts.push('<strong>Case ID:</strong> '+caseId);
+  if(caseId) metaParts.push('<strong>Case ID:</strong> '+esc(caseId));
 
   const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Manual Differential Report</title>'+
     '<style>body{font-family:Arial,sans-serif;color:#000;padding:24px;max-width:680px;margin:0 auto}'+

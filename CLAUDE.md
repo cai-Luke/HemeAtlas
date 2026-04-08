@@ -111,12 +111,45 @@ Attribution is rendered in the student atlas footer.
 
 ---
 
+## Computed Morphometry
+
+### Radar Display
+
+Six-axis radar chart rendered on each cell detail panel. Axes are defined by `MORPH_AXES` / `MORPH_AXIS_LABELS` constants; values are normalized 0–1 via `normMorph()` using `MORPH_RANGES`, then compared against per-type averages in `MORPH_AVERAGES`.
+
+| Axis | Display label | Biological meaning | Source |
+|---|---|---|---|
+| `m_nc_ratio` | N:C ratio | Nuclear fraction of cell area | CSV column |
+| `m_nuc_solidity` | Nuc Solidity | Smoothness of nuclear outline | CSV column |
+| `m_nuc_irregularity` | Nuc Shape | Nuclear shape irregularity | **Derived** (see below) |
+| `m_cell_circularity` | Circularity | How round the cell is | CSV column |
+| `m_nuc_glcm_contrast` | Chromatin | Chromatin texture coarseness | CSV column |
+| `m_cyto_mean_b` | Cyto Color | Cytoplasm LAB b* — separates eosinophil orange from plasma cell blue | CSV column |
+
+> **`m_nuc_irregularity` is a derived axis — it is not a CSV column.** It is computed at render time by `derivedMorph(row)` as `m_nuc_convex_deficiency / m_nuc_area`. This gives a normalized measure of how much the nuclear convex hull exceeds the actual nuclear area, capturing lobulation and indentation. If you edit the radar axes, note that derived axes must be handled via `derivedMorph()` and cannot be read directly from `row[axis]`.
+
+Constants in `index.html`:
+- `MORPH_AXES` — ordered list of 6 axis keys (mix of CSV columns and derived keys)
+- `MORPH_AXIS_LABELS` — display labels for each axis, parallel array to `MORPH_AXES`
+- `MORPH_RANGES` — global 5th–95th percentile min/max per axis, used for 0–1 normalization via `normMorph()`
+- `MORPH_AVERAGES` — per-cell-type mean per axis (good records, effective label), used for the reference polygon
+- `derivedMorph(row)` — computes `m_nuc_irregularity` at render time; result is merged with raw CSV values before normalization
+
+---
+
 ## Known Issues & Open Items
 
 - [ ] Confirm KU-Optofil license with dataset authors before broad public launch
 - [ ] `image_quality` field exists in schema but is not surfaced in UI — kept for compatibility
 - [ ] KO_ records have no tags — tagging pass would improve search/filtering
 - [ ] No automated CI/CD — validation is manual
+- [x] `m_nuc_lobes` radar axis replaced with derived `m_nuc_irregularity` (convex_deficiency / nuc_area). `m_nuc_lobes` column remains in CSV but is no longer displayed.
+- [x] `m_cyto_mean_hue` radar axis replaced with `m_cyto_mean_b` (LAB b* channel). Better perceptual stability and discriminability.
+
+### Backlog (tabled, not yet scheduled)
+- [ ] Zoom lightbox panning — add mouse drag (translateX/Y) while zoomed; currently CSS scale only, no pan
+- [ ] APP_MODE state variable — replace DOM class-polling in keydown handler with a top-level mode enum
+- [ ] Timer bar interpolation — drive CSS transition from a single `width: 0%` set rather than per-tick updates
 
 ---
 
