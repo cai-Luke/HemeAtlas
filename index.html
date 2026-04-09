@@ -587,6 +587,8 @@
   .dc-table thead th.right{text-align:right}
   .dc-row td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
   .dc-row:last-child td{border-bottom:none}
+  @keyframes dc-flash{0%{background:rgba(124,158,248,.25)}100%{background:transparent}}
+  .dc-row.dc-flash td{animation:dc-flash .35s ease-out forwards}
   .dc-nrbc-row td{border-top:2px solid var(--border2);color:var(--text2)}
   .dc-cell-name{font-size:13px;font-weight:500}
   .dc-key-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--text3)}
@@ -608,8 +610,11 @@
   .dc-rbc-feat{flex:1;font-size:13px}
   .dc-grade-btns{display:flex;gap:4px}
   .dc-grade-btn{font-size:12px;padding:3px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text3);cursor:pointer;transition:all .1s}
-  .dc-grade-btn:hover:not(.selected){background:var(--surface3)}
-  .dc-grade-btn.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  .dc-grade-btn:hover:not(.selected-1):not(.selected-2):not(.selected-3){background:var(--surface3)}
+  .dc-grade-btn.selected-0{background:var(--surface2);border-color:var(--border);color:var(--text3)}
+  .dc-grade-btn.selected-1{background:rgba(210,170,80,.18);border-color:rgba(210,170,80,.7);color:rgba(220,185,90,1)}
+  .dc-grade-btn.selected-2{background:rgba(210,120,50,.22);border-color:rgba(210,120,50,.8);color:rgba(225,140,70,1)}
+  .dc-grade-btn.selected-3{background:rgba(200,75,75,.22);border-color:rgba(200,75,75,.85);color:rgba(215,90,90,1)}
   .dc-rbc-wrap.rbc-kb-active .dc-rbc-panel{outline:2px solid var(--accent);outline-offset:2px}
   .dc-rbc-kb-hint{font-size:11px;color:var(--accent);margin-bottom:6px;display:none}
   .dc-rbc-wrap.rbc-kb-active .dc-rbc-kb-hint{display:block}
@@ -623,6 +628,10 @@
   .dc-dashboard-wrapper{display:grid;grid-template-columns:1.8fr 1fr;gap:24px;align-items:start;margin-top:20px}
   .dc-section.rbc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;height:fit-content}
   .dc-dashboard-wrapper h3{font-family:'DM Mono',monospace;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:12px;margin-top:0;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .dc-key-hint{font-size:11px;color:var(--text3);margin-left:2px}
+  .dc-rbc-kb-hint kbd{background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px;font-family:'DM Mono',monospace}
+  .dc-section.wbc.rbc-active{opacity:.55}
+  .dc-section.wbc.rbc-active h3::after{content:' (click to return)';font-size:11px;font-weight:400;color:var(--accent)}
   @media(max-width:1024px){.dc-dashboard-wrapper{grid-template-columns:1fr}}
 
 </style>
@@ -935,11 +944,11 @@
         <span class="dc-complete-badge">Complete</span>
         <div style="flex:1"></div>
         <button class="dc-btn" id="dc-rbc-toggle" onclick="dcToggleRBC()" title="Show/hide RBC morphology">RBC Morphology ▾</button>
-        <button class="dc-btn" onclick="dcUndo()" title="Undo last (Backspace)">↩ Undo</button>
+        <button class="dc-btn" onclick="dcUndo()" title="Undo last WBC count">↩ Undo <span class="dc-key-hint">⌫</span></button>
       </div>
       <div class="dc-dashboard-wrapper">
         <div class="dc-section wbc">
-          <h3>WBC Differential</h3>
+          <h3 id="dc-wbc-header" style="cursor:default">WBC Differential</h3>
           <table class="dc-table">
             <thead>
               <tr>
@@ -955,7 +964,7 @@
         <div class="dc-section rbc">
           <h3>RBC Morphology</h3>
           <div class="dc-rbc-wrap" id="dc-rbc-wrap">
-            <div class="dc-rbc-kb-hint">RBC panel active — ↑↓ to navigate, 0–3 to grade, Esc to exit</div>
+            <div class="dc-rbc-kb-hint" id="dc-rbc-kb-hint">RBC panel active — ↑↓ navigate · 0–3 grade · <kbd>Esc</kbd> return to WBC</div>
             <div class="dc-rbc-panel">
               <div id="dc-rbc-cats"></div>
             </div>
@@ -3638,9 +3647,9 @@ function openTagGalleryFromHub(){
 const DC_WBC = CELLS.filter(c=>c.name!=='NRBC');
 
 const RBC_GROUPS = [
-  {name:'Size',         features:['Microcytes','Macrocytes']},
+  {name:'Size',         features:['Anisocytosis','Microcytes','Macrocytes']},
   {name:'Color',        features:['Hypochromia','Polychromasia']},
-  {name:'Shape',        features:['Target Cells','Spherocytes','Elliptocytes/Ovalocytes','Schistocytes','Acanthocytes','Echinocytes/Burr Cells','Tear Drops','Sickle Cells']},
+  {name:'Shape',        features:['Poikilocytosis','Target Cells','Spherocytes','Elliptocytes/Ovalocytes','Schistocytes','Acanthocytes','Echinocytes/Burr Cells','Tear Drops','Sickle Cells']},
   {name:'Distribution', features:['Rouleaux']},
   {name:'Inclusions',   features:['Howell-Jolly Bodies','Basophilic Stippling','Pappenheimer Bodies']},
 ];
@@ -3668,6 +3677,9 @@ function dcInit(){
     // RBC panel click activates keyboard focus
     document.getElementById('dc-rbc-wrap').addEventListener('click',()=>{
       DC.rbcFocused=true; dcUpdateRBCFocus();
+    });
+    document.getElementById('dc-wbc-header').addEventListener('click',()=>{
+      if(DC.rbcFocused){ DC.rbcFocused=false; dcUpdateRBCFocus(); }
     });
     DC._inited=true;
   }
@@ -3709,7 +3721,7 @@ function dcBuildRBC(){
       const row=document.createElement('div');
       row.className='dc-rbc-row'; row.dataset.feat=feat;
       const btns=DC_GRADES.map((grade,i)=>
-        '<button class="dc-grade-btn'+(i===0?' selected':'')+'" onclick="dcSetGrade(\''+feat.replace(/'/g,"\\'")+"',"+i+')">'+grade+'</button>'
+        '<button class="dc-grade-btn'+(i===0?' selected-0':'')+'" onclick="dcSetGrade(\''+feat.replace(/'/g,"\\'")+"',"+i+')">'+grade+'</button>'
       ).join('');
       row.innerHTML='<span class="dc-rbc-feat">'+feat+'</span><div class="dc-grade-btns">'+btns+'</div>';
       div.appendChild(row);
@@ -3764,6 +3776,8 @@ function dcCount(cellName){
   if(!isNrbc&&DC.locked) return;
   DC.counts[cellName]++;
   DC.history.push(cellName);
+  const flashRow=document.getElementById('dc-row-'+cellName.replace(/\s/g,'-'));
+  if(flashRow){ flashRow.classList.remove('dc-flash'); void flashRow.offsetWidth; flashRow.classList.add('dc-flash'); }
   const wbcTotal=DC_WBC.reduce((s,c)=>s+DC.counts[c.name],0);
   if(!isNrbc&&wbcTotal>=100){
     DC.locked=true;
@@ -3797,8 +3811,9 @@ function dcReset(){
   document.getElementById('dc-rbc-wrap').style.display='';
   document.getElementById('dc-rbc-toggle').textContent='RBC Morphology ▾';
   RBC_FEATURES.forEach(f=>{ DC.rbc[f]=0; });
-  document.querySelectorAll('.dc-grade-btn').forEach(btn=>{
-    btn.classList.toggle('selected',btn.textContent==='None');
+  document.querySelectorAll('.dc-grade-btn').forEach((btn,i)=>{
+    btn.classList.remove('selected-0','selected-1','selected-2','selected-3');
+    if((i%DC_GRADES.length)===0) btn.classList.add('selected-0');
   });
   DC.rbcFocused=false;
   dcUpdateRBCFocus();
@@ -3808,12 +3823,9 @@ function dcReset(){
 
 function dcSetGrade(feat,grade){
   DC.rbc[feat]=grade;
-  document.querySelectorAll('.dc-rbc-row[data-feat]').forEach(row=>{
-    if(row.dataset.feat===feat){
-      row.querySelectorAll('.dc-grade-btn').forEach((btn,i)=>{
-        btn.classList.toggle('selected',i===grade);
-      });
-    }
+  document.querySelectorAll('.dc-rbc-row[data-feat="'+feat+'"] .dc-grade-btn').forEach((btn,i)=>{
+    btn.classList.remove('selected-0','selected-1','selected-2','selected-3');
+    if(i===grade) btn.classList.add('selected-'+i);
   });
 }
 
@@ -3834,6 +3846,7 @@ function dcHandleKey(key){
 function dcUpdateRBCFocus(){
   const wrap=document.getElementById('dc-rbc-wrap');
   wrap.classList.toggle('rbc-kb-active',DC.rbcFocused);
+  document.querySelector('.dc-section.wbc').classList.toggle('rbc-active',DC.rbcFocused);
   document.querySelectorAll('.dc-rbc-row').forEach((row,i)=>{
     row.classList.toggle('rbc-focused',DC.rbcFocused&&i===DC.rbcFocusIdx);
   });
