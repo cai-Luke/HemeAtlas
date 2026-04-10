@@ -2522,6 +2522,7 @@ document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
 
   if(e.key==='Escape'){
+    if(DC&&DC.rbcFocused){DC.rbcFocused=false;dcUpdateRBCFocus();return;}
     if(document.getElementById('morph-panel').style.transform==='translateY(0px)'||document.getElementById('morph-panel').style.transform==='translateY(0)'){closeMorphPanel();return;}
     if(!document.getElementById('about-overlay').classList.contains('hidden')){closeAbout();return;}
     if(!document.getElementById('zoom-overlay').classList.contains('hidden')){closeZoom();return;}
@@ -2531,7 +2532,7 @@ document.addEventListener('keydown',e=>{
 
   // Diff Counter mode
   if(!document.getElementById('diff-counter').classList.contains('hidden')){
-    if(e.key==='Backspace'||KEY_TO_CELL[e.key]){e.preventDefault();dcHandleKey(e.key);}
+    if(e.key==='Backspace'||e.key==='Escape'||KEY_TO_CELL[e.key]){e.preventDefault();dcHandleKey(e.key);}
     return;
   }
 
@@ -3779,6 +3780,23 @@ function dcUpdateTotal(){
   if(nrbcEl) nrbcEl.textContent=DC.counts['NRBC'];
 }
 
+function dcPlayClickSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const buf=ctx.createBuffer(1,ctx.sampleRate*0.03,ctx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,8);
+    const src=ctx.createBufferSource();
+    src.buffer=buf;
+    const gain=ctx.createGain();
+    gain.gain.value=0.15;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    src.onended=()=>ctx.close();
+  }catch(e){}
+}
+
 function dcPlayCompleteSound(){
   try{
     if(!dcAudioCtx) dcAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -3805,6 +3823,7 @@ function dcCount(cellName){
   if(!isNrbc&&DC.locked) return;
   DC.counts[cellName]++;
   DC.history.push(cellName);
+  dcPlayClickSound();
   const wbcTotal=DC_WBC.reduce((s,c)=>s+DC.counts[c.name],0);
   if(!isNrbc&&wbcTotal>=100){
     DC.locked=true;
