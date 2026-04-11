@@ -147,7 +147,7 @@ Constants in `index.html`:
 - [x] `m_cyto_mean_hue` radar axis replaced with `m_cyto_mean_b` (LAB b* channel). Better perceptual stability and discriminability.
 
 ### Backlog (tabled, not yet scheduled)
-- [ ] Zoom lightbox panning — add mouse drag (translateX/Y) while zoomed; currently CSS scale only, no pan
+- [x] Zoom lightbox panning — mouse drag (translateX/Y) added; pan resets on close and on scroll back to scale 1
 - [ ] APP_MODE state variable — replace DOM class-polling in keydown handler with a top-level mode enum
 - [ ] Timer bar interpolation — drive CSS transition from a single `width: 0%` set rather than per-tick updates
 

@@ -196,7 +196,7 @@
   .dp-cell-img{transition:transform .2s ease,opacity .15s}
 
     .zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:900;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
-  .zoom-img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--radius-lg);transition:transform .1s ease;transform-origin:center center}
+  .zoom-img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--radius-lg);transition:transform .1s ease;transform-origin:center center;cursor:grab}
   .zoom-close{position:fixed;top:20px;right:24px;color:rgba(255,255,255,.5);font-size:26px;cursor:pointer;background:none;border:none;transition:color .15s;z-index:901}
   .zoom-close:hover{color:#fff}
   .zoom-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:11px;pointer-events:none;letter-spacing:.3px}
@@ -1005,7 +1005,7 @@
 <div class="zoom-overlay hidden" id="zoom-overlay" onclick="closeZoom()">
   <button class="zoom-close" onclick="closeZoom()">✕</button>
   <img class="zoom-img" id="zoom-img" src="" alt="" onclick="event.stopPropagation()" />
-  <div class="zoom-hint">Scroll to zoom · Click outside to close</div>
+  <div class="zoom-hint">Scroll to zoom · Drag to pan · Click outside to close</div>
 </div>
 
 <div id="toasts"></div>
@@ -1832,15 +1832,20 @@ function openCompareFromDetail(){
 
 // ── ZOOM ───────────────────────────────────────────────
 let zoomScale=1;
+let zoomPanX=0,zoomPanY=0;
+let _zoomBase='';
+let _zoomDrag={active:false,startX:0,startY:0,originX:0,originY:0};
+function _applyZoomTransform(){
+  const img=document.getElementById('zoom-img');
+  img.style.transform=`${_zoomBase} translate(${zoomPanX}px,${zoomPanY}px) scale(${zoomScale})`.trim();
+}
 function openZoom(src){
-  if(!src)return;zoomScale=1;
+  if(!src)return;zoomScale=1;zoomPanX=0;zoomPanY=0;_zoomDrag.active=false;
   const trainerImg=document.getElementById('tr-img');
-  // Carry the trainer's rotation into the zoom so orientation matches
-  const currentTransform=trainerImg&&trainerImg.style.transform?trainerImg.style.transform:'';
+  _zoomBase=trainerImg&&trainerImg.style.transform?trainerImg.style.transform:'';
   const img=document.getElementById('zoom-img');
   img.src=src;
-  // Combine existing orientation transform with scale(1)
-  img.style.transform=currentTransform?`${currentTransform} scale(1)`:'scale(1)';
+  _applyZoomTransform();
   document.getElementById('zoom-overlay').classList.remove('hidden');
 }
 function closeZoom(){document.getElementById('zoom-overlay').classList.add('hidden');}
@@ -1849,11 +1854,41 @@ document.addEventListener('wheel',e=>{
   if(zo.classList.contains('hidden'))return;
   e.preventDefault();
   zoomScale=Math.min(5,Math.max(1,zoomScale-(e.deltaY*0.002)));
-  const img=document.getElementById('zoom-img');
-  // Preserve orientation transform alongside scale
-  const base=img.style.transform.replace(/scale\([^)]+\)/,'').trim();
-  img.style.transform=`${base} scale(${zoomScale})`.trim();
+  if(zoomScale===1){zoomPanX=0;zoomPanY=0;}
+  _applyZoomTransform();
 },{passive:false});
+document.addEventListener('mousedown',e=>{
+  const zo=document.getElementById('zoom-overlay');
+  if(zo.classList.contains('hidden'))return;
+  const img=document.getElementById('zoom-img');
+  if(e.target!==img)return;
+  _zoomDrag.active=true;
+  _zoomDrag.startX=e.clientX;_zoomDrag.startY=e.clientY;
+  _zoomDrag.originX=zoomPanX;_zoomDrag.originY=zoomPanY;
+  img.style.cursor='grabbing';
+  img.style.transition='none';
+  e.stopPropagation();e.preventDefault();
+});
+document.addEventListener('mousemove',e=>{
+  const zo=document.getElementById('zoom-overlay');
+  if(zo.classList.contains('hidden'))return;
+  if(!_zoomDrag.active)return;
+  zoomPanX=_zoomDrag.originX+(e.clientX-_zoomDrag.startX);
+  zoomPanY=_zoomDrag.originY+(e.clientY-_zoomDrag.startY);
+  _applyZoomTransform();
+  e.preventDefault();
+});
+document.addEventListener('mouseup',e=>{
+  const zo=document.getElementById('zoom-overlay');
+  if(zo.classList.contains('hidden'))return;
+  if(!_zoomDrag.active)return;
+  _zoomDrag.active=false;
+  const img=document.getElementById('zoom-img');
+  img.style.transition='transform .1s ease';
+  img.style.cursor='grab';
+  const dx=Math.abs(e.clientX-_zoomDrag.startX),dy=Math.abs(e.clientY-_zoomDrag.startY);
+  if(dx<4&&dy<4&&zoomScale===1)closeZoom();
+});
 
 
 // ── CSV PARSE ──────────────────────────────────────────
