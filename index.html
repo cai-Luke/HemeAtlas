@@ -1087,15 +1087,20 @@ const ADJACENT = {
   'OTHER':         ['NEUTROPHIL','LYMPHOCYTE'],
 };
 
+// Beginner mode: these pairs score full credit — the distinction is too subtle for early
+// learners. Green flash, score increments, auto-advance. Intended to shrink over time.
+const BEGINNER_FULL_CREDIT = [
+  ['NEUTROPHIL','BAND'],
+  ['LYMPHOCYTE','REACTIVE LYMP'],
+];
+
 // Beginner mode: these pairs are "close enough" — no streak break, no wrong panel,
 // amber feedback instead of red. Only fires in beginnerMode for non-curveball questions.
 // Intentionally excludes BLAST↔LYMPHOCYTE / BLAST↔REACTIVE LYMP — blast is too clinically
 // important to let slide even in easy mode.
 const BEGINNER_CLOSE_ENOUGH = [
-  ['NEUTROPHIL','BAND'],
   ['NEUTROPHIL','METAMYELOCYTE'],
   ['BAND','METAMYELOCYTE'],
-  ['LYMPHOCYTE','REACTIVE LYMP'],
 ];
 
 
@@ -2765,25 +2770,35 @@ function commitAnswer(chosenKey, chosenName){
   // Curveball: correct answer is "Not one of these"; otherwise standard label match
   const isCorrect=T._isCurveball ? chosenName==='NOT_THESE' : chosenName===T._correctLabel;
 
-  // Beginner close-enough: wrong answer but a forgiven confusable pair
-  const isClose = !isCorrect && !T._isCurveball && T.beginnerMode &&
-    BEGINNER_CLOSE_ENOUGH.some(([a,b])=>
+  // Beginner full-credit close: counts as correct for scoring (green flash)
+  const isFullCreditClose = !isCorrect && !T._isCurveball && T.beginnerMode &&
+    BEGINNER_FULL_CREDIT.some(([a,b])=>
       (a===chosenName&&b===T._correctLabel)||(b===chosenName&&a===T._correctLabel));
 
-  if(isCorrect){T.correct++;T.streak++;}
+  // Borderline-adjacent: cell marked borderline and answer is adjacent → forgiven in all modes
+  const isBorderline = T._currentRec.path_confidence === 'borderline';
+  const isAdjacent = !isCorrect && !isFullCreditClose && isBorderline &&
+    (ADJACENT[T._correctLabel]||[]).includes(chosenName);
+
+  // Beginner close-enough: wrong answer but a forgiven confusable pair
+  const isClose = isAdjacent || (!isCorrect && !isFullCreditClose && !T._isCurveball && T.beginnerMode &&
+    BEGINNER_CLOSE_ENOUGH.some(([a,b])=>
+      (a===chosenName&&b===T._correctLabel)||(b===chosenName&&a===T._correctLabel)));
+
+  if(isCorrect || isFullCreditClose){T.correct++;T.streak++;}
   else if(!isClose) T.streak=0;
   // isClose: streak preserved, no score increment
 
   // Chess clock — pause drain and grant reward if correct
   if(ccIsActive()){
     ccPauseTick();
-    if(isCorrect) ccCorrect();
+    if(isCorrect || isFullCreditClose) ccCorrect();
     ccUpdateStreak();
   }
 
   // Flash the keypad button
-  flashKeypad(chosenName, isCorrect?'correct':isClose?'close':'wrong');
-  if(!isCorrect && !isClose){
+  flashKeypad(chosenName, (isCorrect||isFullCreditClose)?'correct':isClose?'close':'wrong');
+  if(!isCorrect && !isFullCreditClose && !isClose){
     // For curveballs highlight "Not one of these"; otherwise highlight the correct cell
     flashKeypad(T._isCurveball?'NOT_THESE':T._correctLabel, 'correct');
   }
@@ -2793,7 +2808,8 @@ function commitAnswer(chosenKey, chosenName){
   }
 
   T.log.push({
-    rec:T._currentRec, isCorrect,
+    rec:T._currentRec, isCorrect: isCorrect||isFullCreditClose,
+    isFullCreditClose: isFullCreditClose||undefined,
     chosenKey, chosenName,
     correctKey: T._isCurveball ? 'N' : (correctCell?correctCell.key:'?'),
     correctName: T._isCurveball ? 'NOT_THESE ('+T._correctLabel+')' : T._correctLabel,
@@ -2808,12 +2824,19 @@ function commitAnswer(chosenKey, chosenName){
     flash.className='tr-flash-overlay show correct';
     flash.innerHTML=`<div class="tr-flash-label">✓ ${label}</div>`;
     document.getElementById('tr-pending-hint').style.display='none';
+  } else if(isFullCreditClose){
+    const chosenDisp=esc(CELL_DISPLAY[chosenName]||chosenName);
+    const correctDisp=esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel);
+    flash.className='tr-flash-overlay show correct';
+    flash.innerHTML=`<div class="tr-flash-label">✓ ${chosenDisp}</div>
+      <div class="tr-flash-sub">(also accepted: ${correctDisp})</div>`;
+    document.getElementById('tr-pending-hint').style.display='none';
   } else if(isClose){
     const chosenDisp=esc(CELL_DISPLAY[chosenName]||chosenName);
     const correctDisp=esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel);
     flash.className='tr-flash-overlay show close';
     flash.innerHTML=`<div class="tr-flash-label">~ Close</div>
-      <div class="tr-flash-sub">That's a ${chosenDisp} — answer was ${correctDisp}</div>`;
+      <div class="tr-flash-sub">${isAdjacent?'Borderline cell — both answers reasonable':`That's a ${chosenDisp} — answer was ${correctDisp}`}</div>`;
     document.getElementById('tr-pending-hint').style.display='none';
   } else {
     flash.className='tr-flash-overlay show wrong';
@@ -2831,6 +2854,13 @@ function commitAnswer(chosenKey, chosenName){
     hint.textContent='Correct!';
     display.innerHTML=`<div class="tr-key-chip correct-key">${esc(chosenKey.toUpperCase())}</div>
       <span style="font-size:11px;color:var(--green)">${label}</span>`;
+  } else if(isFullCreditClose){
+    const chosenDisp=esc(CELL_DISPLAY[chosenName]||chosenName);
+    const correctDisp=esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel);
+    hint.textContent='Correct!';
+    display.innerHTML=`<div class="tr-key-chip correct-key">${esc(chosenKey.toUpperCase())}</div>
+      <span style="font-size:11px;color:var(--green);margin-right:6px">${chosenDisp}</span>
+      <span style="font-size:11px;color:var(--text3)">→ also: ${correctDisp}</span>`;
   } else if(isClose){
     const chosenDisp=esc(CELL_DISPLAY[chosenName]||chosenName);
     const correctDisp=esc(CELL_DISPLAY[T._correctLabel]||T._correctLabel);
@@ -2861,16 +2891,16 @@ function commitAnswer(chosenKey, chosenName){
 
   // Next button + Enter key activation
   document.getElementById('tr-next-btn').classList.remove('hidden');
-  if(!isCorrect && !isClose) setEnterKeyActive(true);
+  if(!isCorrect && !isFullCreditClose && !isClose) setEnterKeyActive(true);
   updateHUD();
 
-  // Wrong panel — skip for close answers
-  if(!isCorrect && !isClose){
+  // Wrong panel — skip for close and full-credit-close answers
+  if(!isCorrect && !isFullCreditClose && !isClose){
     buildWrongPanel(T._currentRec, chosenName, T._correctLabel);
   }
 
-  // Auto-advance on correct or close after 900ms (close is forgivable — keep momentum)
-  if(isCorrect || isClose) setTimeout(()=>{if(T.phase==='answered')nextQuestion();},900);
+  // Auto-advance on correct, full-credit-close, or close after 900ms
+  if(isCorrect || isFullCreditClose || isClose) setTimeout(()=>{if(T.phase==='answered')nextQuestion();},900);
 }
 
 // ── WRONG PANEL ────────────────────────────────────────
