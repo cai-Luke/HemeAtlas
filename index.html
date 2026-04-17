@@ -55,8 +55,11 @@
 
   /* ── HEADER ── */
   .header{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
-  .logo-mark{font-family:'Instrument Serif',serif;font-size:17px;color:var(--text);letter-spacing:-.2px}
+  .logo-mark{font-family:'Instrument Serif',serif;font-size:17px;color:var(--text);letter-spacing:-.2px;cursor:pointer}
   .logo-mark em{font-style:italic;color:var(--accent)}
+  .logo-mark:hover em{color:var(--accent-hover)}
+  .hub-resume-link{font-size:11px;color:var(--text4);text-decoration:none;display:inline-block;margin-top:4px}
+  .hub-resume-link:hover{text-decoration:underline}
   .logo-sep{width:1px;height:20px;background:var(--border2)}
   .logo-sub{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.3px}
   .header-search{flex:1;max-width:380px;position:relative;margin-left:auto}
@@ -646,7 +649,7 @@
 <!-- APP -->
 <div class="app" id="app">
   <div class="header">
-    <div class="logo-mark">Heme <em>Atlas</em></div>
+    <div class="logo-mark" onclick="goHome()">Heme <em>Atlas</em></div>
     <div class="logo-sep"></div>
     <div class="logo-sub">Student Reference</div>
     <div class="header-search">
@@ -1280,6 +1283,25 @@ function renderHub(){
     `<div class="hub-key-chip"><div>${esc(c.key)}</div><div>${esc(c.short.split(' ')[0])}</div></div>`
   ).join('');
   const total=(Object.keys(S.records).length+Object.keys(S.aberrationRecords).length).toLocaleString();
+  const trainPaused=T.phase==='pending'||T.phase==='answered';
+  const trainTitle=trainPaused?'Resume Training':'Train';
+  const trainDesc=trainPaused
+    ?(T.sessionCount>0?`Continue session — ${T.totalAnswered}/${T.sessionCount}`:`Continue session — ${T.totalAnswered} answered`)
+    :'Test your differential recognition with keyboard shortcuts';
+  const trainLink=trainPaused
+    ?`<a class="hub-resume-link" onclick="event.stopPropagation();startNewTrainSession()">Start new session</a>`
+    :'';
+  const wbcTotal=DC_WBC.reduce((s,c)=>s+DC.counts[c.name],0);
+  const diffPaused=wbcTotal>0;
+  const diffTitle=diffPaused?'Resume Count':'Diff Counter';
+  const nrbcCount=DC.counts['NRBC'];
+  const diffDesc=diffPaused
+    ?`In progress — ${wbcTotal}/100 WBC${nrbcCount>0?`, ${nrbcCount} NRBC`:''}`
+    :'100-cell WBC tally with RBC morphology grading';
+  const diffLink=diffPaused
+    ?`<div class="hub-tile-desc" style="margin-top:2px">${esc(diffDesc)}</div><a class="hub-resume-link" onclick="event.stopPropagation();dcNewCount()">Start new count</a>`
+    :`<div class="hub-tile-desc">${esc(diffDesc)}</div>`;
+
   hub.innerHTML=`
     <div class="hub-primary">
       <div class="hub-card" onclick="setMode('browse');setView('all')">
@@ -1291,8 +1313,9 @@ function renderHub(){
       </div>
       <div class="hub-card" onclick="setMode('train')">
         <div>
-          <div class="hub-card-title">Train</div>
-          <div class="hub-card-desc">Test your differential recognition with keyboard shortcuts</div>
+          <div class="hub-card-title">${esc(trainTitle)}</div>
+          <div class="hub-card-desc">${esc(trainDesc)}</div>
+          ${trainLink}
         </div>
         <div class="hub-train-preview">
           <img class="hub-train-img" id="hub-train-img" src="${getImageUrl(trainRec.filename)}" alt="Training preview" />
@@ -1312,8 +1335,8 @@ function renderHub(){
     </div>
     <div class="hub-tile" onclick="setMode('diff')">
       <div class="hub-tile-icon">🧮</div>
-      <div class="hub-tile-title">Diff Counter</div>
-      <div class="hub-tile-desc">100-cell WBC tally with RBC morphology grading</div>
+      <div class="hub-tile-title">${esc(diffTitle)}</div>
+      ${diffLink}
     </div>
     <div class="hub-tile" onclick="openAbout()">
       <div class="hub-tile-icon">ⓘ</div>
@@ -1937,11 +1960,33 @@ function setMode(mode,opts={}){
   // conf filter only relevant in browse
   document.querySelector('.conf-filter').style.opacity=isBrowse?'1':'0.3';
   document.querySelector('.conf-filter').style.pointerEvents=isBrowse?'auto':'none';
-  if(isTrain) showTrainerConfig();
+  if(isTrain){
+    if(T.phase==='pending'||T.phase==='answered'){
+      // Resume: keep session screen visible, don't show config
+      document.getElementById('tr-config-screen').classList.add('hidden');
+      document.getElementById('tr-report-screen').classList.add('hidden');
+      document.getElementById('tr-session-screen').classList.remove('hidden');
+    } else {
+      showTrainerConfig();
+    }
+  }
   if(isCompare) initCompare(opts);
   if(isDiff) dcInit();
   if(isBrowse && !S.currentView) showHub();
 }
+function goHome(){
+  if(!document.getElementById('hub').classList.contains('hidden')) return;
+  // Completed sessions are transient — don't preserve report state
+  if(T.phase==='report') T.phase='idle';
+  S.currentView=null; S.searchQuery='';
+  setMode('browse');
+}
+
+function startNewTrainSession(){
+  T.phase='idle';
+  setMode('train');
+}
+
 // ── COMPARE ────────────────────────────────────────────
 const CMP = {
   left:  { type:'', count:4, pool:[], shown:[] },
@@ -3912,23 +3957,34 @@ function dcToggleRBC(){
   document.getElementById('dc-rbc-toggle').textContent=DC.rbcVisible?'RBC Morphology ▾':'RBC Morphology ▸';
 }
 
-function dcReset(){
-  if(!confirm('Reset all counts?')) return;
-  const name=document.getElementById('dc-name').value;
+function dcResetState(){
   CELLS.forEach(c=>{ DC.counts[c.name]=0; });
   DC.history=[];
   DC.locked=false;
   DC.rbcVisible=true;
-  document.getElementById('dc-rbc-wrap').style.display='';
-  document.getElementById('dc-rbc-toggle').textContent='RBC Morphology ▾';
   RBC_FEATURES.forEach(f=>{ DC.rbc[f]=0; });
-  document.querySelectorAll('.dc-grade-btn').forEach(btn=>{
-    btn.classList.toggle('selected',btn.textContent==='None');
-  });
   DC.rbcFocused=false;
-  dcUpdateRBCFocus();
-  dcUpdateTotal();
+  if(DC._inited){
+    document.getElementById('dc-rbc-wrap').style.display='';
+    document.getElementById('dc-rbc-toggle').textContent='RBC Morphology ▾';
+    document.querySelectorAll('.dc-grade-btn').forEach(btn=>{
+      btn.classList.toggle('selected',btn.textContent==='None');
+    });
+    dcUpdateRBCFocus();
+    dcUpdateTotal();
+  }
+}
+
+function dcReset(){
+  if(!confirm('Reset all counts?')) return;
+  const name=document.getElementById('dc-name').value;
+  dcResetState();
   document.getElementById('dc-name').value=name;
+}
+
+function dcNewCount(){
+  dcResetState();
+  setMode('diff');
 }
 
 function dcSetGrade(feat,grade){
