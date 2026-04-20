@@ -1872,6 +1872,25 @@ function openBulkPanel(type){
     document.getElementById('bulk-approve-desc').textContent=`Approve ${pending} of ${n} selected cells (${n-pending} already approved, will be skipped).`;
     document.getElementById('bulk-approve-user').value=G.userName||'';
     document.getElementById('bulk-approve-overlay').classList.remove('hidden');
+  } else if(type==='reclassify'){
+    const n = G.selected.size;
+    document.getElementById('bulk-reclassify-desc').textContent =
+      `Generate a reclassification list for ${n} selected cell${n===1?'':'s'}.`;
+    document.getElementById('bulk-reclassify-reason').value = '';
+    document.getElementById('bulk-reclassify-output-wrap').classList.add('hidden');
+    document.getElementById('bulk-reclassify-output').value = '';
+
+    // Populate cell type select
+    const sel = document.getElementById('bulk-reclassify-select');
+    sel.innerHTML = '<option value="">— Select new type —</option>';
+    Object.keys(CELL_DISPLAY).forEach(key => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = CELL_DISPLAY[key] || key;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('bulk-reclassify-overlay').classList.remove('hidden');
   } else if(type==='tag'){
     document.getElementById('bulk-tag-desc').textContent=`Add or remove a tag on ${n} selected cell${n===1?'':'s'}.`;
     document.getElementById('bulk-tag-input').value='';
@@ -2026,6 +2045,42 @@ function commitBulkConfidence(){
   toast(`✅ Confidence set to "${val}" on ${n} cells`);
   closeBulkPanel('confidence');
   refreshAll();
+}
+
+function updateReclassifyPreview(){
+  const newLabel = document.getElementById('bulk-reclassify-select').value;
+  const reason   = document.getElementById('bulk-reclassify-reason').value.trim();
+  const wrap     = document.getElementById('bulk-reclassify-output-wrap');
+  const out      = document.getElementById('bulk-reclassify-output');
+
+  if(!newLabel){ wrap.classList.add('hidden'); return; }
+
+  const filenames = Array.from(G.selected);
+  const displayName = CELL_DISPLAY[newLabel] || newLabel;
+
+  const reasonNote = reason ? `\nReason: ${reason}` : '';
+  const header =
+    `Reclassify ${filenames.length} cell${filenames.length===1?'':'s'} to "${displayName}" (${newLabel}).${reasonNote}\n` +
+    `Update atlas.csv: set path_label="${newLabel}", path_status="finalized" for each image_id below.\n\n` +
+    `image_id,filename,current_label`;
+
+  const rows = filenames.map(fn => {
+    const rec = G.records[fn];
+    const currentLabel = rec?.path_label || rec?.tech_label || '?';
+    const imageId = rec?.image_id || fn;
+    return `${imageId},${fn},${currentLabel}`;
+  });
+
+  out.value = header + '\n' + rows.join('\n');
+  wrap.classList.remove('hidden');
+}
+
+function copyReclassifyOutput(){
+  const text = document.getElementById('bulk-reclassify-output').value;
+  navigator.clipboard.writeText(text).then(
+    () => toast('📋 Reclassification list copied'),
+    () => toast('⚠ Copy failed — select the text manually')
+  );
 }
 
 function commitBulkReclassify(){
