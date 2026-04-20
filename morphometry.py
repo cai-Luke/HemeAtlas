@@ -77,31 +77,17 @@ def segment_cell(img_rgb: np.ndarray):
     else:
         return cell_mask, np.zeros_like(cell_mask), np.zeros_like(cell_mask), "no_cell"
 
-    # --- Nucleus mask: combined Color-Luminance Score ---
-    # Nuclei are high a* (purple) and low L* (dark).
-    # Combined score: a* - L* (shifts purple-dark pixels to very high values)
-    score = a.copy() - L.copy()
-    score_in_cell = score[cell_mask]
-    
-    if len(score_in_cell) > 0:
-        try:
-            # Otsu on the combined score
-            thresh_score = filters.threshold_otsu(score_in_cell)
-            
-            # Sanity check: Ensure we don't pick a threshold that is too restrictive
-            # Typical nuclear score is > -20 (e.g. a=20, L=40 -> 20-40 = -20)
-            # If Otsu picks something very high, it's likely over-splitting a solid nucleus.
-            thresh_score = min(thresh_score, -10.0) 
-        except Exception:
-            thresh_score = -20.0
-    else:
-        thresh_score = -20.0
-
-    nucleus_mask = (score > thresh_score) & cell_mask
+    # --- Nucleus mask: Absolute Baseline (Round 7) ---
+    # Abandoning relative thresholding (Otsu) within the cell body.
+    # We use fixed clinical baselines for Wright-Giemsa/MGG stains:
+    # 1. Purple component (a* > 5)
+    # 2. Dark/Dense component (L* < 70)
+    nucleus_mask = (a > 5) & (L < 70) & cell_mask
 
     # Morphological cleanup
     nucleus_mask = binary_opening(nucleus_mask, disk(2))
     nucleus_mask = binary_closing(nucleus_mask, disk(3))
+    from scipy.ndimage import binary_fill_holes
     nucleus_mask = binary_fill_holes(nucleus_mask)
     nucleus_mask = remove_small_objects(nucleus_mask, min_size=32)
 
@@ -221,8 +207,8 @@ def compute_morphometry(img_rgb: np.ndarray, cell_mask, nuc_mask, cyto_mask) -> 
         distance = ndi.distance_transform_edt(nuc_clean)
         
         # 3. Find peaks: centers of lobes
-        # min_distance=45 is tuned for ~350x350 images to separate lobes while ignoring bumps.
-        peaks = peak_local_max(distance, min_distance=45, threshold_rel=0.2, labels=nuc_clean)
+        # min_distance=30 is tuned to separate lobes while ignoring small internal bumps.
+        peaks = peak_local_max(distance, min_distance=30, threshold_rel=0.2, labels=nuc_clean)
         
         row["m_nuc_lobes"] = float(len(peaks)) if len(peaks) > 0 else (1.0 if nuc_mask.any() else 0.0)
     except Exception:
