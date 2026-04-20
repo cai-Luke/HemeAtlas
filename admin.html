@@ -579,6 +579,7 @@
   <span class="fab-count" id="fab-count">0 selected</span>
   <button class="fab-btn" onclick="openBulkPanel('commentary')">✍ Commentary</button>
   <button class="fab-btn fab-green" onclick="openBulkPanel('approve')">✅ Approve</button>
+  <button class="fab-btn" onclick="openBulkPanel('reclassify')">🔀 Reclassify</button>
   <button class="fab-btn" style="border-color:rgba(248,113,113,.5);color:#fca5a5" onclick="openBulkPanel('exclude')">🚫 Exclude</button>
   <button class="fab-btn" onclick="openBulkPanel('tag')">🏷 Tag</button>
   <button class="fab-btn" onclick="openBulkPanel('confidence')">◎ Confidence</button>
@@ -688,6 +689,37 @@
     <div class="bulk-footer">
       <button class="btn" onclick="closeBulkPanel('confidence')">Cancel</button>
       <button class="btn primary" onclick="commitBulkConfidence()">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK RECLASSIFY PANEL -->
+<div class="bulk-overlay hidden" id="bulk-reclassify-overlay" onclick="closeBulkIfBg(event,'bulk-reclassify-overlay')">
+  <div class="bulk-panel">
+    <div class="bulk-header">
+      <div class="bulk-title">🔀 Bulk Reclassify</div>
+      <button class="dp-close" onclick="closeBulkPanel('reclassify')">✕</button>
+    </div>
+    <div class="bulk-body">
+      <div class="bulk-desc" id="bulk-reclassify-desc"></div>
+      <div>
+        <label class="dp-label" style="margin-bottom:6px">New cell type</label>
+        <select class="dp-select" id="bulk-reclassify-select">
+          <option value="">— Select new type —</option>
+        </select>
+      </div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Reason (optional)</label>
+        <input class="dp-input" id="bulk-reclassify-reason" placeholder="e.g. Reactive lymphs, not monocytes" />
+      </div>
+      <div>
+        <label class="dp-label" style="margin-bottom:5px">Your name (for audit trail)</label>
+        <input class="dp-input" id="bulk-reclassify-user" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="bulk-footer">
+      <button class="btn" onclick="closeBulkPanel('reclassify')">Cancel</button>
+      <button class="btn primary" onclick="commitBulkReclassify()">Reclassify Selected</button>
     </div>
   </div>
 </div>
@@ -1856,6 +1888,18 @@ function openBulkPanel(type){
     document.getElementById('bulk-conf-user').value=G.userName||'';
     setBulkConf('classic');
     document.getElementById('bulk-confidence-overlay').classList.remove('hidden');
+  } else if(type==='reclassify'){
+    document.getElementById('bulk-reclassify-desc').textContent=`Change the cell type label on ${n} selected cell${n===1?'':'s'}.`;
+    document.getElementById('bulk-reclassify-user').value=G.userName||'';
+    document.getElementById('bulk-reclassify-reason').value='';
+    const sel=document.getElementById('bulk-reclassify-select');
+    sel.innerHTML='<option value="">— Select new type —</option>';
+    Object.keys(CELL_DISPLAY).forEach(key=>{
+      const opt=document.createElement('option');
+      opt.value=key;opt.textContent=CELL_DISPLAY[key]||key;
+      sel.appendChild(opt);
+    });
+    document.getElementById('bulk-reclassify-overlay').classList.remove('hidden');
   }
 }
 
@@ -1981,6 +2025,35 @@ function commitBulkConfidence(){
   });
   toast(`✅ Confidence set to "${val}" on ${n} cells`);
   closeBulkPanel('confidence');
+  refreshAll();
+}
+
+function commitBulkReclassify(){
+  const newLabel=document.getElementById('bulk-reclassify-select').value;
+  const reason=document.getElementById('bulk-reclassify-reason').value.trim();
+  const user=document.getElementById('bulk-reclassify-user').value.trim();
+  if(!newLabel){toast('⚠ Select a cell type.');return;}
+  if(!user){toast('⚠ Enter your name.');return;}
+  G.userName=user;
+  const ts=now();let n=0;
+  G.selected.forEach(filename=>{
+    const rec=G.records[filename];if(!rec)return;
+    const prevLabel=rec.path_label||rec.tech_label||'—';
+    rec.path_label=newLabel;
+    rec.path_status='finalized';
+    rec.path_id=user;
+    rec.path_date=ts;
+    rec.path_review_method='bulk';
+    rec.version+=1;
+    rec.last_modified_by=user;
+    rec.last_modified_date=ts;
+    const actionText=`Bulk reclassify: ${prevLabel} → ${newLabel}`+(reason?` (${reason})`:'');
+    rec.audit_trail.push({user,role:'path',action:actionText,timestamp:ts,version:rec.version});
+    n++;
+  });
+  toast(`✅ Reclassified ${n} cells as ${CELL_DISPLAY[newLabel]||newLabel}`);
+  closeBulkPanel('reclassify');
+  clearSelection();
   refreshAll();
 }
 
