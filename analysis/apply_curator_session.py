@@ -3,19 +3,25 @@ import sys
 import os
 import re
 
-def apply_reclassification_list(text, csv_path='data/atlas.csv'):
+def apply_curator_list(text, csv_path='data/atlas.csv'):
     if not os.path.exists(csv_path):
         print(f"Error: {csv_path} not found.")
         return
 
-    # Extract target label from header: Reclassify X cells to "Label" (label_id).
-    label_match = re.search(r'\(([^)]+)\)\.', text)
-    if not label_match:
-        print("Error: Could not find target label ID in parentheses (e.g. '(neutrophil).')")
-        return
+    # Check if it is an exclusion list or reclassification list
+    is_exclude = "Exclude" in text and "path_status=\"excluded\"" in text
     
-    target_label = label_match.group(1)
-    print(f"Target Label: {target_label}")
+    target_label = None
+    if is_exclude:
+        print("Target: EXCLUSION")
+    else:
+        # Extract target label from header: Reclassify X cells to "Label" (label_id).
+        label_match = re.search(r'\(([^)]+)\)\.', text)
+        if not label_match:
+            print("Error: Could not find target label ID in parentheses (e.g. '(neutrophil).')")
+            return
+        target_label = label_match.group(1)
+        print(f"Target Label: {target_label}")
 
     # Find the data lines (starting after the header line 'image_id,filename,current_label')
     lines = text.strip().split('\n')
@@ -45,28 +51,35 @@ def apply_reclassification_list(text, csv_path='data/atlas.csv'):
         # Apply update
         mask = df['image_id'] == image_id
         if mask.any():
-            df.loc[mask, 'path_label'] = target_label
-            df.loc[mask, 'path_status'] = 'finalized'
+            if is_exclude:
+                df.loc[mask, 'path_status'] = 'excluded'
+                note = '; curator-exclude'
+            else:
+                # Update BOTH labels to ensure it 'moves' in the UI regardless of overrides
+                df.loc[mask, 'path_label'] = target_label
+                df.loc[mask, 'correction_label'] = target_label
+                df.loc[mask, 'path_status'] = 'finalized'
+                note = f'; curator-reclassify:{target_label}'
             
             # Add audit note
             current_note = str(df.loc[mask, 'tech_note'].values[0]) if not pd.isna(df.loc[mask, 'tech_note'].values[0]) else ''
-            if 'curator-reclassify' not in current_note:
-                df.loc[mask, 'tech_note'] = current_note + f'; curator-reclassify:{target_label}'
+            if note not in current_note:
+                df.loc[mask, 'tech_note'] = current_note + note
             
             count += 1
         else:
             print(f"Warning: No record found for image_id {image_id}")
 
     df.to_csv(csv_path, index=False)
-    print(f"Successfully reclassified {count} cells to {target_label}")
+    action = "excluded" if is_exclude else f"reclassified to {target_label}"
+    print(f"Successfully {action} {count} cells (updated atlas.csv)")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        # If no args, read from stdin (for large blocks)
         input_text = sys.stdin.read()
         if input_text:
-            apply_reclassification_list(input_text)
+            apply_curator_list(input_text)
         else:
             print("Usage: pbpaste | python3 apply_curator_session.py")
     else:
-        apply_reclassification_list(sys.argv[1])
+        apply_curator_list(sys.argv[1])

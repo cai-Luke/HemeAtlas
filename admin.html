@@ -730,22 +730,25 @@
 
 <!-- BULK EXCLUDE PANEL -->
 <div class="bulk-overlay hidden" id="bulk-exclude-overlay" onclick="closeBulkIfBg(event,'bulk-exclude-overlay')">
-  <div class="bulk-panel">
+  <div class="bulk-panel" style="width:600px">
     <div class="bulk-header">
-      <div class="bulk-title">🚫 Bulk Exclude</div>
+      <div class="bulk-title">🚫 Exclude — Generate List</div>
       <button class="dp-close" onclick="closeBulkPanel('exclude')">✕</button>
     </div>
     <div class="bulk-body">
       <div class="bulk-desc" id="bulk-exclude-desc"></div>
-      <div class="bulk-warning">Excluded cells are removed from the student atlas. This can be undone cell-by-cell via the detail panel.</div>
-      <div>
-        <label class="dp-label" style="margin-bottom:5px">Your name</label>
-        <input class="dp-input" id="bulk-exclude-user" placeholder="Your name" />
+      <div class="bulk-warning">Excluded cells are removed from the student atlas. Copy this list and pass it to the Gemini agent to perform the manual exclusion.</div>
+      
+      <div id="bulk-exclude-output-wrap">
+        <label class="dp-label" style="margin-bottom:5px">Copy this and pass to Gemini agent</label>
+        <textarea class="bulk-textarea" id="bulk-exclude-output"
+                  style="min-height:140px;font-family:'DM Mono',monospace;font-size:11px"
+                  readonly></textarea>
+        <button class="btn primary" style="margin-top:8px;background:var(--red);border-color:var(--red)" onclick="copyExcludeOutput()">📋 Copy to Clipboard</button>
       </div>
     </div>
     <div class="bulk-footer">
-      <button class="btn" onclick="closeBulkPanel('exclude')">Cancel</button>
-      <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="commitBulkExclude()">Exclude Selected</button>
+      <button class="btn" onclick="closeBulkPanel('exclude')">Close</button>
     </div>
   </div>
 </div>
@@ -1903,8 +1906,23 @@ function openBulkPanel(type){
     document.getElementById('bulk-tag-overlay').classList.remove('hidden');
   } else if(type==='exclude'){
     const notExcluded=Array.from(G.selected).filter(f=>G.records[f]?.path_status!=='excluded').length;
-    document.getElementById('bulk-exclude-desc').textContent=`Exclude ${notExcluded} of ${G.selected.size} selected cells from the atlas (${G.selected.size-notExcluded} already excluded, will be skipped).`;
-    document.getElementById('bulk-exclude-user').value=G.userName||'';
+    document.getElementById('bulk-exclude-desc').textContent=`Generate an exclusion list for ${notExcluded} cells.`;
+    
+    const filenames = Array.from(G.selected).filter(f=>G.records[f]?.path_status!=='excluded');
+    const out = document.getElementById('bulk-exclude-output');
+    
+    const header = 
+      `Exclude ${filenames.length} cells from the atlas.\n` +
+      `Update atlas.csv: set path_status="excluded" for each image_id below.\n\n` +
+      `image_id,filename,current_label`;
+    
+    const rows = filenames.map(fn => {
+        const rec = G.records[fn];
+        const currentLabel = rec?.path_label || rec?.tech_label || '?';
+        return `${rec.image_id},${fn},${currentLabel}`;
+    });
+    
+    out.value = header + '\n' + rows.join('\n');
     document.getElementById('bulk-exclude-overlay').classList.remove('hidden');
   } else if(type==='confidence'){
     document.getElementById('bulk-confidence-desc').textContent=`Set confidence rating on ${n} selected cell${n===1?'':'s'}.`;
@@ -2072,6 +2090,14 @@ function copyReclassifyOutput(){
   navigator.clipboard.writeText(text).then(
     () => toast('📋 Reclassification list copied'),
     () => toast('⚠ Copy failed — select the text manually')
+  );
+}
+
+function copyExcludeOutput(){
+  const text = document.getElementById('bulk-exclude-output').value;
+  navigator.clipboard.writeText(text).then(
+    () => toast('📋 Exclusion list copied'),
+    () => toast('⚠ Copy failed')
   );
 }
 
