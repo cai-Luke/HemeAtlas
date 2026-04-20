@@ -54,38 +54,43 @@ def segment_cell(img_rgb: np.ndarray):
     a = lab[:, :, 1]   # negative=green, positive=red/magenta
 
     # --- Cell mask: background has high L* (white/light pink) ---
-    # Otsu on L* to find threshold between cell and background.
-    # We invert because we want dark regions (low L*) = cell.
     try:
         thresh_L = filters.threshold_otsu(L)
     except Exception:
-        thresh_L = 80.0  # fallback: typical background L* is >80
-
+        thresh_L = 80.0
     cell_mask = L < thresh_L
 
-    # Morphological cleanup: remove small holes and debris
+    # Morphological cleanup
     cell_mask = binary_closing(cell_mask, disk(4))
     cell_mask = binary_opening(cell_mask, disk(2))
-
-    # Fill holes inside the cell mask
     from scipy.ndimage import binary_fill_holes
     cell_mask = binary_fill_holes(cell_mask)
-
-    # Remove very small connected components (noise)
     cell_mask = remove_small_objects(cell_mask, min_size=64)
+
+    # --- NEW: OBJECT ISOLATION ---
+    # Keep only the largest connected component (the actual cell)
+    labeled_cell = label(cell_mask)
+    props_cell = regionprops(labeled_cell)
+    if props_cell:
+        largest_cell = max(props_cell, key=lambda r: r.area)
+        cell_mask = labeled_cell == largest_cell.label
+    else:
+        return cell_mask, np.zeros_like(cell_mask), np.zeros_like(cell_mask), "no_cell"
 
     # --- Nucleus mask: nuclei stain blue/purple — high a* (red-green axis) ---
     # In Wright-Giemsa / MGG, nucleus is intensely purple → positive a*
     a_channel = a.copy()
-    try:
-        thresh_a = filters.threshold_otsu(a_channel)
-    except Exception:
+    # Mask a_channel to ONLY the cell mask before thresholding to avoid background noise
+    a_in_cell = a_channel[cell_mask]
+    if len(a_in_cell) > 0:
+        try:
+            thresh_a = filters.threshold_otsu(a_in_cell)
+        except Exception:
+            thresh_a = 0.0
+    else:
         thresh_a = 0.0
 
-    nucleus_mask = a_channel > thresh_a
-
-    # Only consider nucleus pixels within the cell mask
-    nucleus_mask = nucleus_mask & cell_mask
+    nucleus_mask = (a_channel > thresh_a) & cell_mask
 
     # Morphological cleanup
     nucleus_mask = binary_opening(nucleus_mask, disk(2))
@@ -148,11 +153,12 @@ def compute_morphometry(img_rgb: np.ndarray, cell_mask, nuc_mask, cyto_mask) -> 
     cell_props = _largest_region(cell_mask)
     if cell_props is not None:
         cp = cell_props
-        row["m_cell_area"] = cp.area
+        # Use sum of mask for area to be consistent with N:C ratio
+        row["m_cell_area"] = float(cell_mask.sum())
         row["m_cell_major"] = cp.major_axis_length
         row["m_cell_minor"] = cp.minor_axis_length
         row["m_cell_eccentricity"] = cp.eccentricity
-        row["m_cell_circularity"] = _circularity(cp.area, cp.perimeter)
+        row["m_cell_circularity"] = _circularity(float(cell_mask.sum()), cp.perimeter)
         row["m_cell_solidity"] = cp.solidity
         row["m_cell_equiv_diameter"] = cp.equivalent_diameter_area
         row["m_cell_aspect_ratio"] = (
@@ -170,16 +176,14 @@ def compute_morphometry(img_rgb: np.ndarray, cell_mask, nuc_mask, cyto_mask) -> 
     # Nucleus geometry — largest component
     # -----------------------------------------------------------------------
     nuc_props = _largest_region(nuc_mask)
-    nuc_labeled = label(nuc_mask)
-    nuc_component_count = len(regionprops(nuc_labeled))
-
     if nuc_props is not None:
         np_ = nuc_props
-        row["m_nuc_area"] = np_.area
+        # Use sum of mask for area (vital for multi-lobed neutrophils)
+        row["m_nuc_area"] = float(nuc_mask.sum())
         row["m_nuc_major"] = np_.major_axis_length
         row["m_nuc_minor"] = np_.minor_axis_length
         row["m_nuc_eccentricity"] = np_.eccentricity
-        row["m_nuc_circularity"] = _circularity(np_.area, np_.perimeter)
+        row["m_nuc_circularity"] = _circularity(float(nuc_mask.sum()), np_.perimeter)
         row["m_nuc_solidity"] = np_.solidity
         # Convex deficiency from full nucleus mask (all components)
         from skimage.morphology import convex_hull_image
