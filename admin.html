@@ -695,31 +695,35 @@
 
 <!-- BULK RECLASSIFY PANEL -->
 <div class="bulk-overlay hidden" id="bulk-reclassify-overlay" onclick="closeBulkIfBg(event,'bulk-reclassify-overlay')">
-  <div class="bulk-panel">
+  <div class="bulk-panel" style="width:600px">
     <div class="bulk-header">
-      <div class="bulk-title">🔀 Bulk Reclassify</div>
+      <div class="bulk-title">🔀 Reclassify — Generate List</div>
       <button class="dp-close" onclick="closeBulkPanel('reclassify')">✕</button>
     </div>
     <div class="bulk-body">
       <div class="bulk-desc" id="bulk-reclassify-desc"></div>
       <div>
-        <label class="dp-label" style="margin-bottom:6px">New cell type</label>
-        <select class="dp-select" id="bulk-reclassify-select">
+        <label class="dp-label" style="margin-bottom:6px">Reclassify as</label>
+        <select class="dp-select" id="bulk-reclassify-select" onchange="updateReclassifyPreview()">
           <option value="">— Select new type —</option>
         </select>
       </div>
       <div>
-        <label class="dp-label" style="margin-bottom:5px">Reason (optional)</label>
-        <input class="dp-input" id="bulk-reclassify-reason" placeholder="e.g. Reactive lymphs, not monocytes" />
+        <label class="dp-label" style="margin-bottom:5px">Reason (optional — included in instruction)</label>
+        <input class="dp-input" id="bulk-reclassify-reason"
+               placeholder="e.g. Reactive lymphs, not monocytes"
+               oninput="updateReclassifyPreview()" />
       </div>
-      <div>
-        <label class="dp-label" style="margin-bottom:5px">Your name (for audit trail)</label>
-        <input class="dp-input" id="bulk-reclassify-user" placeholder="Your name" />
+      <div id="bulk-reclassify-output-wrap" class="hidden">
+        <label class="dp-label" style="margin-bottom:5px">Copy this and pass to Gemini agent</label>
+        <textarea class="bulk-textarea" id="bulk-reclassify-output"
+                  style="min-height:140px;font-family:'DM Mono',monospace;font-size:11px"
+                  readonly></textarea>
+        <button class="btn primary" style="margin-top:8px" onclick="copyReclassifyOutput()">📋 Copy to Clipboard</button>
       </div>
     </div>
     <div class="bulk-footer">
-      <button class="btn" onclick="closeBulkPanel('reclassify')">Cancel</button>
-      <button class="btn primary" onclick="commitBulkReclassify()">Reclassify Selected</button>
+      <button class="btn" onclick="closeBulkPanel('reclassify')">Close</button>
     </div>
   </div>
 </div>
@@ -1907,18 +1911,6 @@ function openBulkPanel(type){
     document.getElementById('bulk-conf-user').value=G.userName||'';
     setBulkConf('classic');
     document.getElementById('bulk-confidence-overlay').classList.remove('hidden');
-  } else if(type==='reclassify'){
-    document.getElementById('bulk-reclassify-desc').textContent=`Change the cell type label on ${n} selected cell${n===1?'':'s'}.`;
-    document.getElementById('bulk-reclassify-user').value=G.userName||'';
-    document.getElementById('bulk-reclassify-reason').value='';
-    const sel=document.getElementById('bulk-reclassify-select');
-    sel.innerHTML='<option value="">— Select new type —</option>';
-    Object.keys(CELL_DISPLAY).forEach(key=>{
-      const opt=document.createElement('option');
-      opt.value=key;opt.textContent=CELL_DISPLAY[key]||key;
-      sel.appendChild(opt);
-    });
-    document.getElementById('bulk-reclassify-overlay').classList.remove('hidden');
   }
 }
 
