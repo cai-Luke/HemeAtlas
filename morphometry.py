@@ -194,12 +194,26 @@ def compute_morphometry(img_rgb: np.ndarray, cell_mask, nuc_mask, cyto_mask) -> 
                   "m_nuc_circularity", "m_nuc_solidity", "m_nuc_convex_deficiency"]:
             row[k] = np.nan
 
-    # Lobe count: erode nucleus mask moderately, count remaining components
+    # Lobe count: Distance Transform + Peak Detection
+    # Aggressive smoothing and distance constraints to count biological lobes.
     try:
-        eroded = morphology.binary_erosion(nuc_mask, disk(5))
-        eroded = remove_small_objects(eroded, min_size=16)
-        lobe_labeled = label(eroded)
-        row["m_nuc_lobes"] = len(regionprops(lobe_labeled)) if eroded.any() else 0
+        from scipy import ndimage as ndi
+        from skimage.feature import peak_local_max
+        
+        # 1. Fill holes and apply strong Gaussian smoothing to the mask
+        # This removes internal texture/fragmentation and smooths the boundary.
+        nuc_clean = ndi.binary_fill_holes(nuc_mask)
+        smoothed = ndi.gaussian_filter(nuc_clean.astype(float), sigma=5.0)
+        nuc_clean = smoothed > 0.5
+        
+        # 2. Distance transform
+        distance = ndi.distance_transform_edt(nuc_clean)
+        
+        # 3. Find peaks: centers of lobes
+        # min_distance=45 is tuned for ~350x350 images to separate lobes while ignoring bumps.
+        peaks = peak_local_max(distance, min_distance=45, threshold_rel=0.2, labels=nuc_clean)
+        
+        row["m_nuc_lobes"] = float(len(peaks)) if len(peaks) > 0 else (1.0 if nuc_mask.any() else 0.0)
     except Exception:
         row["m_nuc_lobes"] = np.nan
 
@@ -349,25 +363,38 @@ def main():
     print(f"Found {total} finalized records to process.")
     print(f"Output → {OUTPUT_CSV}\n")
 
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing
+    num_workers = multiprocessing.cpu_count()
+    print(f"Using {num_workers} workers...")
+
     results = []
     quality_counts = {}
     error_ids = []
 
-    for i, (_, row) in enumerate(finalized.iterrows(), 1):
-        image_id = row["image_id"]
-        filename = row["filename"]
-        image_path = IMAGES_DIR / filename
+    # Prepare tasks
+    tasks = []
+    for _, row in finalized.iterrows():
+        tasks.append((IMAGES_DIR / row["filename"], row["image_id"]))
 
-        result = process_image(image_path, image_id)
-        results.append(result)
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        # Submit all tasks
+        futures = [executor.submit(process_image, path, eid) for path, eid in tasks]
+        
+        for i, future in enumerate(futures, 1):
+            try:
+                result = future.result()
+                results.append(result)
+                
+                q = result.get("m_seg_quality", "error")
+                quality_counts[q] = quality_counts.get(q, 0) + 1
+                if q == "error":
+                    error_ids.append(result.get("image_id", "unknown"))
 
-        q = result.get("m_seg_quality", "error")
-        quality_counts[q] = quality_counts.get(q, 0) + 1
-        if q == "error":
-            error_ids.append(image_id)
-
-        if i % 100 == 0 or i == total:
-            print(f"[{i}/{total}] {filename} — {q}")
+                if i % 100 == 0 or i == total:
+                    print(f"[{i}/{total}] Completed — {q}")
+            except Exception as e:
+                print(f"Worker error: {e}")
 
     # Build DataFrame with consistent column order
     df = pd.DataFrame(results)
