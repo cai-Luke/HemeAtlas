@@ -127,6 +127,13 @@ def main():
             if score > next_p10:
                 proposed = next_stage
                 reason = f"score {score:.3f} > p90({label})={p90:.3f}, within p10({next_stage})={next_p10:.3f}"
+
+        # Case B: Too immature for current label
+        elif prev_stage and score < p10:
+            prev_p90 = expected.loc[prev_stage, 0.90]
+            if score < prev_p90:
+                proposed = prev_stage
+                reason = f"score {score:.3f} < p10({label})={p10:.3f}, within p90({prev_stage})={prev_p90:.3f}"
         
         if proposed:
             proposals.append({
