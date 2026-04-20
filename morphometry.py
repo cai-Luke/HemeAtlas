@@ -77,20 +77,27 @@ def segment_cell(img_rgb: np.ndarray):
     else:
         return cell_mask, np.zeros_like(cell_mask), np.zeros_like(cell_mask), "no_cell"
 
-    # --- Nucleus mask: nuclei stain blue/purple — high a* (red-green axis) ---
-    # In Wright-Giemsa / MGG, nucleus is intensely purple → positive a*
-    a_channel = a.copy()
-    # Mask a_channel to ONLY the cell mask before thresholding to avoid background noise
-    a_in_cell = a_channel[cell_mask]
-    if len(a_in_cell) > 0:
+    # --- Nucleus mask: combined Color-Luminance Score ---
+    # Nuclei are high a* (purple) and low L* (dark).
+    # Combined score: a* - L* (shifts purple-dark pixels to very high values)
+    score = a.copy() - L.copy()
+    score_in_cell = score[cell_mask]
+    
+    if len(score_in_cell) > 0:
         try:
-            thresh_a = filters.threshold_otsu(a_in_cell)
+            # Otsu on the combined score
+            thresh_score = filters.threshold_otsu(score_in_cell)
+            
+            # Sanity check: Ensure we don't pick a threshold that is too restrictive
+            # Typical nuclear score is > -20 (e.g. a=20, L=40 -> 20-40 = -20)
+            # If Otsu picks something very high, it's likely over-splitting a solid nucleus.
+            thresh_score = min(thresh_score, -10.0) 
         except Exception:
-            thresh_a = 0.0
+            thresh_score = -20.0
     else:
-        thresh_a = 0.0
+        thresh_score = -20.0
 
-    nucleus_mask = (a_channel > thresh_a) & cell_mask
+    nucleus_mask = (score > thresh_score) & cell_mask
 
     # Morphological cleanup
     nucleus_mask = binary_opening(nucleus_mask, disk(2))
