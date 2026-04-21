@@ -157,7 +157,7 @@ def process_image(image_path: Path, image_id: str) -> dict:
             smoothed = ndi.gaussian_filter(nuc_mask.astype(float), sigma=4.0) > 0.5
             eroded = morphology.binary_erosion(smoothed, disk(8))
             eroded = remove_small_objects(eroded, min_size=150)
-            row["m_nuc_lobes"] = float(label(eroded).max())
+            row["m_nuc_lobes"] = max(1.0, float(label(eroded).max()))
             
         # Irregularity: (hull - area) / hull
         try:
