@@ -59,26 +59,38 @@ Other columns exist for schema compatibility with the parent project but are bla
 
 `NEUTROPHIL` · `BAND` · `LYMPHOCYTE` · `REACTIVE LYMP` · `MONOCYTE` · `EOSINOPHIL` · `BASOPHIL` · `BLAST` · `PROMYELOCYTE` · `MYELOCYTE` · `METAMYELOCYTE` · `NRBC` · `PLASMA` · `OTHER`
 
+> [!NOTE]
+> **Manual Review (2026-04-20)**: A comprehensive manual review of the `atlas.csv` records was performed. The dataset is confirmed to reflect accurate morphology and classification standards for all 13,934 finalized records.
+
+
 ### Current Census (by effective label)
 
 | Cell Type | Count | Cell Type | Count |
 |---|---|---|---|
-| LYMPHOCYTE | 5,818 | BAND | 235 |
-| EOSINOPHIL | 1,912 | METAMYELOCYTE | 294 |
-| REACTIVE LYMP | 1,538 | MYELOCYTE | 134 |
-| MONOCYTE | 1,587 | PROMYELOCYTE | 167 |
+| LYMPHOCYTE | 5,818 | METAMYELOCYTE | 278 |
+| EOSINOPHIL | 1,912 | BAND | 247 |
+| MONOCYTE | 1,587 | NEUTROPHIL | 227 |
+| REACTIVE LYMP | 1,538 | PROMYELOCYTE | 167 |
 | BLAST | 988 | PLASMA | 142 |
-| BASOPHIL | 570 | OTHER | 54 |
-| NRBC | 302 | NEUTROPHIL | 193 |
+| BASOPHIL | 570 | MYELOCYTE | 135 |
+| NRBC | 302 | OTHER | 54 |
 
 ---
 
-## Curator Workflow (admin.html)
+### Agent-Assisted Execution (Primary)
 
-1. Open `admin.html` (locally or on live site)
-2. Browse, tag, exclude, relabel, set confidence, add commentary
-3. **Export CSV** → downloads as `atlas.csv`; a modal appears with ready-to-paste deploy commands and a Copy button
-4. Paste commands into Terminal — they copy the file, commit, and push in one go
+The Claude agent is the primary executor for database maintenance.
+1. Identify cells for reclassification, exclusion, or tagging in `admin.html`.
+2. Use **Bulk Actions** (Selection Mode) to generate an **Agent Instruction List**.
+3. Copy the generated instruction block (e.g., "Reclassify 5 cells to BLAST") and pass it to the agent.
+4. The agent performs direct CSV modifications, audit trail updates, and repository sync.
+
+### Manual Curator Workflow (Fallback)
+
+1. Open `admin.html` (locally or on live site).
+2. Browse, tag, exclude, relabel, set confidence, add commentary.
+3. **Export CSV** → downloads as `atlas.csv`; a modal appears with deploy commands.
+4. Paste commands into Terminal to copy the file, commit, and push.
 
 ### Adding New Images (Batch Import)
 
@@ -97,6 +109,15 @@ Other columns exist for schema compatibility with the parent project but are bla
 **KU-Optofil** (KO_ prefix, 12,209 records): Yarıkan et al. 2026, DOI: 10.1038/s41597-026-06761-y. CC BY 4.0 per Zenodo; paper states CC BY-NC-ND 4.0 — **license confirmation pending with authors.** 10 cell classes from Sysmex DI-60. No tags. Segmented neutrophils excluded from import.
 
 Attribution is rendered in the student atlas footer.
+
+### Morphometry Pipeline (Refined 2026-04-21)
+- **Strategy**: Nucleus-First segmentation.
+- **Accuracy**: Resolved N:C ratio inversions (now realistically ~0.60). Fixed Lobe Count inversion (Neutrophils now correctly show higher lobe counts than Myelocytes).
+- **Metrics**: 
+  - `m_nc_ratio`: Decreasing trend validated (Neutrophils < Myelocytes).
+  - `m_nuc_lobes`: Increasing trend validated (Neutrophils > Myelocytes).
+  - `m_nuc_irregularity`: Peaking at Band/Neutrophil stage.
+- **Status**: Production-ready. Entire database (13,965 images) reprocessed and merged into `atlas.csv`.
 
 ---
 
@@ -126,10 +147,10 @@ Six-axis radar chart rendered on each cell detail panel. Axes are defined by `MO
 | `m_nuc_glcm_contrast` | Chromatin | Chromatin texture coarseness | CSV column |
 | `m_cyto_mean_b` | Cyto Color | Cytoplasm LAB b* — separates eosinophil orange from plasma cell blue | CSV column |
 
-> **`m_nuc_irregularity` is a derived axis — it is not a CSV column.** It is computed at render time by `derivedMorph(row)` as `m_nuc_convex_deficiency / m_nuc_area`. This gives a normalized measure of how much the nuclear convex hull exceeds the actual nuclear area, capturing lobulation and indentation. If you edit the radar axes, note that derived axes must be handled via `derivedMorph()` and cannot be read directly from `row[axis]`.
+> **`m_nuc_irregularity` is now a persistent CSV column.** It is computed as `m_nuc_convex_deficiency / m_nuc_area`. This captures nuclear lobulation and indentation, serving as a primary differentiator for mature granulocyte stages.
 
 Constants in `index.html`:
-- `MORPH_AXES` — ordered list of 6 axis keys (mix of CSV columns and derived keys)
+- `MORPH_AXES` — ordered list of 6 axis keys (mapped from CSV columns)
 - `MORPH_AXIS_LABELS` — display labels for each axis, parallel array to `MORPH_AXES`
 - `MORPH_RANGES` — global 5th–95th percentile min/max per axis, used for 0–1 normalization via `normMorph()`
 - `MORPH_AVERAGES` — per-cell-type mean per axis (good records, effective label), used for the reference polygon

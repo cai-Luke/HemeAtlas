@@ -1,26 +1,22 @@
 """
 morphometry.py — Batch cell morphometry for HemeAtlas
 Outputs morphometry.csv with m_ prefixed columns, ready to merge into atlas.csv.
-
-Usage:
-    python morphometry.py
-
-Dependencies: scikit-image, numpy, pandas, Pillow
 """
 
 import os
 import sys
 import math
 import warnings
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from PIL import Image
-
+from pathlib import Path
 from skimage import color, filters, morphology, measure, feature
 from skimage.morphology import disk, binary_opening, binary_closing, remove_small_objects
 from skimage.measure import label, regionprops
+from scipy import ndimage as ndi
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 
 warnings.filterwarnings("ignore")
 
@@ -33,310 +29,16 @@ IMAGES_DIR = REPO_ROOT / "images"
 OUTPUT_CSV = REPO_ROOT / "morphometry.csv"
 
 # ---------------------------------------------------------------------------
-# Segmentation
+# Column Schema
 # ---------------------------------------------------------------------------
-
-def segment_cell(img_rgb: np.ndarray):
-    """
-    Segment image into cell_mask, nucleus_mask, cytoplasm_mask.
-
-    Returns:
-        cell_mask      — bool array, True = cell (nucleus + cytoplasm)
-        nucleus_mask   — bool array, True = nucleus
-        cyto_mask      — bool array, True = cytoplasm
-        quality        — str: 'good' | 'no_nucleus' | 'no_cytoplasm' | 'no_cell' | 'tiny_cell'
-    """
-    h, w = img_rgb.shape[:2]
-    total_px = h * w
-
-    lab = color.rgb2lab(img_rgb)
-    L = lab[:, :, 0]   # 0–100
-    a = lab[:, :, 1]   # negative=green, positive=red/magenta
-
-    # --- Cell mask: background has high L* (white/light pink) ---
-    try:
-        thresh_L = filters.threshold_otsu(L)
-    except Exception:
-        thresh_L = 80.0
-    cell_mask = L < thresh_L
-
-    # Morphological cleanup
-    cell_mask = binary_closing(cell_mask, disk(4))
-    cell_mask = binary_opening(cell_mask, disk(2))
-    from scipy.ndimage import binary_fill_holes
-    cell_mask = binary_fill_holes(cell_mask)
-    cell_mask = remove_small_objects(cell_mask, min_size=64)
-
-    # --- NEW: OBJECT ISOLATION ---
-    # Keep only the largest connected component (the actual cell)
-    labeled_cell = label(cell_mask)
-    props_cell = regionprops(labeled_cell)
-    if props_cell:
-        largest_cell = max(props_cell, key=lambda r: r.area)
-        cell_mask = labeled_cell == largest_cell.label
-    else:
-        return cell_mask, np.zeros_like(cell_mask), np.zeros_like(cell_mask), "no_cell"
-
-    # --- Nucleus mask: Absolute Baseline (Round 7) ---
-    # Abandoning relative thresholding (Otsu) within the cell body.
-    # We use fixed clinical baselines for Wright-Giemsa/MGG stains:
-    # 1. Purple component (a* > 5)
-    # 2. Dark/Dense component (L* < 70)
-    nucleus_mask = (a > 5) & (L < 70) & cell_mask
-
-    # Morphological cleanup
-    nucleus_mask = binary_opening(nucleus_mask, disk(2))
-    nucleus_mask = binary_closing(nucleus_mask, disk(3))
-    from scipy.ndimage import binary_fill_holes
-    nucleus_mask = binary_fill_holes(nucleus_mask)
-    nucleus_mask = remove_small_objects(nucleus_mask, min_size=32)
-
-    # --- Cytoplasm ---
-    cyto_mask = cell_mask & ~nucleus_mask
-
-    # --- Quality flags ---
-    cell_area = cell_mask.sum()
-    nuc_area = nucleus_mask.sum()
-    cyto_area = cyto_mask.sum()
-
-    if cell_area == 0:
-        return cell_mask, nucleus_mask, cyto_mask, "no_cell"
-
-    if cell_area < 0.05 * total_px:
-        quality = "tiny_cell"
-    elif nuc_area == 0:
-        quality = "no_nucleus"
-    elif cyto_area == 0:
-        quality = "no_cytoplasm"
-    else:
-        quality = "good"
-
-    return cell_mask, nucleus_mask, cyto_mask, quality
-
-
-# ---------------------------------------------------------------------------
-# Morphometry
-# ---------------------------------------------------------------------------
-
-def _largest_region(mask: np.ndarray):
-    """Return regionprops of the largest connected component in mask, or None."""
-    labeled = label(mask)
-    props = regionprops(labeled)
-    if not props:
-        return None
-    return max(props, key=lambda r: r.area)
-
-
-def _circularity(area, perimeter):
-    if perimeter == 0:
-        return np.nan
-    return (4 * math.pi * area) / (perimeter ** 2)
-
-
-def compute_morphometry(img_rgb: np.ndarray, cell_mask, nuc_mask, cyto_mask) -> dict:
-    """Compute all m_ morphometry columns. Returns dict of values."""
-    row = {}
-
-    lab = color.rgb2lab(img_rgb)
-    gray = color.rgb2gray(img_rgb)
-
-    # -----------------------------------------------------------------------
-    # Cell geometry
-    # -----------------------------------------------------------------------
-    cell_props = _largest_region(cell_mask)
-    if cell_props is not None:
-        cp = cell_props
-        # Use sum of mask for area to be consistent with N:C ratio
-        row["m_cell_area"] = float(cell_mask.sum())
-        row["m_cell_major"] = cp.major_axis_length
-        row["m_cell_minor"] = cp.minor_axis_length
-        row["m_cell_eccentricity"] = cp.eccentricity
-        row["m_cell_circularity"] = _circularity(float(cell_mask.sum()), cp.perimeter)
-        row["m_cell_solidity"] = cp.solidity
-        row["m_cell_equiv_diameter"] = cp.equivalent_diameter_area
-        row["m_cell_aspect_ratio"] = (
-            cp.major_axis_length / cp.minor_axis_length
-            if cp.minor_axis_length > 0 else np.nan
-        )
-        row["m_cell_extent"] = cp.extent
-    else:
-        for k in ["m_cell_area", "m_cell_major", "m_cell_minor", "m_cell_eccentricity",
-                  "m_cell_circularity", "m_cell_solidity", "m_cell_equiv_diameter",
-                  "m_cell_aspect_ratio", "m_cell_extent"]:
-            row[k] = np.nan
-
-    # -----------------------------------------------------------------------
-    # Nucleus geometry — largest component
-    # -----------------------------------------------------------------------
-    nuc_props = _largest_region(nuc_mask)
-    if nuc_props is not None:
-        np_ = nuc_props
-        # Use sum of mask for area (vital for multi-lobed neutrophils)
-        row["m_nuc_area"] = float(nuc_mask.sum())
-        row["m_nuc_major"] = np_.major_axis_length
-        row["m_nuc_minor"] = np_.minor_axis_length
-        row["m_nuc_eccentricity"] = np_.eccentricity
-        row["m_nuc_circularity"] = _circularity(float(nuc_mask.sum()), np_.perimeter)
-        row["m_nuc_solidity"] = np_.solidity
-        # Convex deficiency from full nucleus mask (all components)
-        from skimage.morphology import convex_hull_image
-        try:
-            hull = convex_hull_image(nuc_mask)
-            hull_area = hull.sum()
-        except Exception:
-            hull_area = np_.convex_image.sum() if np_.convex_image is not None else np_.area
-        row["m_nuc_convex_deficiency"] = float(hull_area) - float(nuc_mask.sum())
-    else:
-        for k in ["m_nuc_area", "m_nuc_major", "m_nuc_minor", "m_nuc_eccentricity",
-                  "m_nuc_circularity", "m_nuc_solidity", "m_nuc_convex_deficiency"]:
-            row[k] = np.nan
-
-    # Lobe count: Distance Transform + Peak Detection
-    # Aggressive smoothing and distance constraints to count biological lobes.
-    try:
-        from scipy import ndimage as ndi
-        from skimage.feature import peak_local_max
-        
-        # 1. Fill holes and apply strong Gaussian smoothing to the mask
-        # This removes internal texture/fragmentation and smooths the boundary.
-        nuc_clean = ndi.binary_fill_holes(nuc_mask)
-        smoothed = ndi.gaussian_filter(nuc_clean.astype(float), sigma=5.0)
-        nuc_clean = smoothed > 0.5
-        
-        # 2. Distance transform
-        distance = ndi.distance_transform_edt(nuc_clean)
-        
-        # 3. Find peaks: centers of lobes
-        # min_distance=30 is tuned to separate lobes while ignoring small internal bumps.
-        peaks = peak_local_max(distance, min_distance=30, threshold_rel=0.2, labels=nuc_clean)
-        
-        row["m_nuc_lobes"] = float(len(peaks)) if len(peaks) > 0 else (1.0 if nuc_mask.any() else 0.0)
-    except Exception:
-        row["m_nuc_lobes"] = np.nan
-
-    # -----------------------------------------------------------------------
-    # N:C ratio
-    # -----------------------------------------------------------------------
-    nuc_area = nuc_mask.sum()
-    cell_area = cell_mask.sum()
-    row["m_nc_ratio"] = float(nuc_area) / float(cell_area) if cell_area > 0 else np.nan
-
-    # -----------------------------------------------------------------------
-    # Color / Intensity — nucleus
-    # -----------------------------------------------------------------------
-    if nuc_area > 0:
-        row["m_nuc_mean_l"] = float(lab[:, :, 0][nuc_mask].mean())
-        row["m_nuc_mean_a"] = float(lab[:, :, 1][nuc_mask].mean())
-        row["m_nuc_mean_b"] = float(lab[:, :, 2][nuc_mask].mean())
-        row["m_nuc_intensity_std"] = float(gray[nuc_mask].std())
-    else:
-        row["m_nuc_mean_l"] = np.nan
-        row["m_nuc_mean_a"] = np.nan
-        row["m_nuc_mean_b"] = np.nan
-        row["m_nuc_intensity_std"] = np.nan
-
-    # Color / Intensity — cytoplasm
-    cyto_area = cyto_mask.sum()
-    if cyto_area > 0:
-        row["m_cyto_mean_l"] = float(lab[:, :, 0][cyto_mask].mean())
-        row["m_cyto_mean_a"] = float(lab[:, :, 1][cyto_mask].mean())
-        row["m_cyto_mean_b"] = float(lab[:, :, 2][cyto_mask].mean())
-
-        # Mean hue in HSV
-        hsv = color.rgb2hsv(img_rgb)
-        row["m_cyto_mean_hue"] = float(hsv[:, :, 0][cyto_mask].mean())
-    else:
-        row["m_cyto_mean_l"] = np.nan
-        row["m_cyto_mean_a"] = np.nan
-        row["m_cyto_mean_b"] = np.nan
-        row["m_cyto_mean_hue"] = np.nan
-
-    # -----------------------------------------------------------------------
-    # GLCM texture — nucleus region
-    # -----------------------------------------------------------------------
-    if nuc_area >= 4:
-        try:
-            # Extract bounding box of nucleus mask, quantize to 64 levels
-            rows_idx, cols_idx = np.where(nuc_mask)
-            r0, r1 = rows_idx.min(), rows_idx.max() + 1
-            c0, c1 = cols_idx.min(), cols_idx.max() + 1
-            gray_patch = gray[r0:r1, c0:c1]
-            mask_patch = nuc_mask[r0:r1, c0:c1]
-
-            # Zero out non-nucleus pixels so they don't contribute
-            gray_patch = gray_patch.copy()
-            gray_patch[~mask_patch] = 0.0
-
-            # Quantize to 0–63
-            gray_int = (gray_patch * 63).astype(np.uint8)
-
-            glcm = feature.graycomatrix(
-                gray_int, distances=[1], angles=[0],
-                levels=64, symmetric=True, normed=True
-            )
-            row["m_nuc_glcm_contrast"] = float(feature.graycoprops(glcm, "contrast")[0, 0])
-            row["m_nuc_glcm_homogeneity"] = float(feature.graycoprops(glcm, "homogeneity")[0, 0])
-            row["m_nuc_glcm_energy"] = float(feature.graycoprops(glcm, "energy")[0, 0])
-            row["m_nuc_glcm_correlation"] = float(feature.graycoprops(glcm, "correlation")[0, 0])
-        except Exception:
-            row["m_nuc_glcm_contrast"] = np.nan
-            row["m_nuc_glcm_homogeneity"] = np.nan
-            row["m_nuc_glcm_energy"] = np.nan
-            row["m_nuc_glcm_correlation"] = np.nan
-    else:
-        row["m_nuc_glcm_contrast"] = np.nan
-        row["m_nuc_glcm_homogeneity"] = np.nan
-        row["m_nuc_glcm_energy"] = np.nan
-        row["m_nuc_glcm_correlation"] = np.nan
-
-    return row
-
-
-# ---------------------------------------------------------------------------
-# Per-image processing
-# ---------------------------------------------------------------------------
-
-def process_image(image_path: Path, image_id: str) -> dict:
-    """Load image, segment, compute morphometry. Returns a row dict."""
-    base = {"image_id": image_id}
-
-    try:
-        pil_img = Image.open(image_path).convert("RGB")
-        img_rgb = np.array(pil_img, dtype=np.float64) / 255.0
-    except Exception as e:
-        base["m_seg_quality"] = "error"
-        return base
-
-    try:
-        cell_mask, nuc_mask, cyto_mask, quality = segment_cell(img_rgb)
-    except Exception as e:
-        base["m_seg_quality"] = "error"
-        return base
-
-    base["m_seg_quality"] = quality
-
-    try:
-        morph = compute_morphometry(img_rgb, cell_mask, nuc_mask, cyto_mask)
-        base.update(morph)
-    except Exception as e:
-        # Quality flag already set; morphometry failed — leave columns absent (will be NaN)
-        pass
-
-    return base
-
-
-# ---------------------------------------------------------------------------
-# Column order
-# ---------------------------------------------------------------------------
-
 M_COLUMNS = [
     "image_id",
     "m_cell_area", "m_cell_major", "m_cell_minor", "m_cell_eccentricity",
     "m_cell_circularity", "m_cell_solidity", "m_cell_equiv_diameter",
     "m_cell_aspect_ratio", "m_cell_extent",
     "m_nuc_area", "m_nuc_major", "m_nuc_minor", "m_nuc_eccentricity",
-    "m_nuc_circularity", "m_nuc_solidity", "m_nuc_lobes", "m_nuc_convex_deficiency",
-    "m_nc_ratio",
+    "m_nuc_circularity", "m_nuc_solidity", "m_nuc_lobes", "m_nuc_irregularity",
+    "m_nuc_convex_deficiency", "m_nc_ratio",
     "m_nuc_mean_l", "m_nuc_mean_a", "m_nuc_mean_b", "m_nuc_intensity_std",
     "m_cyto_mean_l", "m_cyto_mean_a", "m_cyto_mean_b", "m_cyto_mean_hue",
     "m_nuc_glcm_contrast", "m_nuc_glcm_homogeneity",
@@ -344,77 +46,204 @@ M_COLUMNS = [
     "m_seg_quality",
 ]
 
+# ---------------------------------------------------------------------------
+# Segmentation
+# ---------------------------------------------------------------------------
+
+def segment_cell(img_rgb):
+    """
+    Nucleus-First Segmentation Strategy.
+    1. Sample background from corners.
+    2. Identify nucleus (dark + purple).
+    3. Grow cell mask from nucleus using connectivity (darker than background + not too yellow).
+    """
+    h, w = img_rgb.shape[:2]
+    lab = color.rgb2lab(img_rgb)
+    L = lab[:, :, 0]; a = lab[:, :, 1]; b = lab[:, :, 2]
+    
+    # 1. Background Sampling
+    corners_l = np.concatenate([L[:5,:5], L[:5,-5:], L[-5:,:5], L[-5:,-5:]])
+    corners_a = np.concatenate([a[:5,:5], a[:5,-5:], a[-5:,:5], a[-5:,-5:]])
+    corners_b = np.concatenate([b[:5,:5], b[:5,-5:], b[-5:,:5], b[-5:,-5:]])
+    bg_l = np.median(corners_l); bg_a = np.median(corners_a); bg_b = np.median(corners_b)
+    
+    # 2. Nucleus First
+    nuc_mask = (L < (bg_l - 20)) & (a > (bg_a + 10))
+    nuc_mask = remove_small_objects(nuc_mask, min_size=500)
+    
+    labeled_nuc = label(nuc_mask)
+    if labeled_nuc.max() == 0:
+        # Fallback to liberal nucleus
+        nuc_mask = (L < (bg_l - 15)) & (a > (bg_a + 5))
+        nuc_mask = remove_small_objects(nuc_mask, min_size=200)
+        labeled_nuc = label(nuc_mask)
+        
+    if labeled_nuc.max() == 0:
+        return np.zeros_like(L, dtype=bool), np.zeros_like(L, dtype=bool), np.zeros_like(L, dtype=bool), "no_nucleus"
+    
+    nuc_props = regionprops(labeled_nuc)
+    # Take center-most component
+    best_nuc = min(nuc_props, key=lambda r: math.dist(r.centroid, (h/2, w/2)))
+    nuc_mask = (labeled_nuc == best_nuc.label)
+    
+    # 3. Cell Growth
+    # Candidate mask: Anything darker than background and not too yellow
+    candidate_mask = (L < (bg_l - 5)) & (b < (bg_b + 5))
+    labeled_cell = label(candidate_mask)
+    nuc_y, nuc_x = best_nuc.centroid
+    cell_label = labeled_cell[int(nuc_y), int(nuc_x)]
+    
+    if cell_label == 0:
+        cell_mask = nuc_mask.copy()
+    else:
+        cell_mask = (labeled_cell == cell_label)
+        
+    cell_mask = binary_closing(cell_mask, disk(5))
+    cell_mask = ndi.binary_fill_holes(cell_mask)
+    
+    # Safety: Ensure cell mask always contains nucleus mask
+    cell_mask = cell_mask | nuc_mask
+    
+    cyto_mask = cell_mask & ~nuc_mask
+    return cell_mask, nuc_mask, cyto_mask, "good"
 
 # ---------------------------------------------------------------------------
-# Main
+# Processing
 # ---------------------------------------------------------------------------
+
+def process_image(image_path: Path, image_id: str) -> dict:
+    row = {"image_id": image_id}
+    try:
+        img = Image.open(image_path).convert("RGB")
+        img_rgb = np.array(img, dtype=np.float64) / 255.0
+        
+        cell_mask, nuc_mask, cyto_mask, quality = segment_cell(img_rgb)
+        row["m_seg_quality"] = quality
+        
+        if quality == "no_nucleus":
+            for col in M_COLUMNS:
+                if col not in row: row[col] = 0.0
+            return row
+            
+        # 1. Geometry
+        c_area = float(cell_mask.sum())
+        n_area = float(nuc_mask.sum())
+        
+        labeled_cell = label(cell_mask)
+        cell_props = regionprops(labeled_cell)[0]
+        labeled_nuc = label(nuc_mask)
+        nuc_props = regionprops(labeled_nuc)[0]
+        
+        row["m_cell_area"] = c_area
+        row["m_cell_major"] = float(cell_props.major_axis_length)
+        row["m_cell_minor"] = float(cell_props.minor_axis_length)
+        row["m_cell_eccentricity"] = float(cell_props.eccentricity)
+        row["m_cell_circularity"] = 4 * np.pi * c_area / (cell_props.perimeter**2) if cell_props.perimeter > 0 else 0
+        row["m_cell_solidity"] = float(cell_props.solidity)
+        row["m_cell_equiv_diameter"] = float(cell_props.equivalent_diameter)
+        row["m_cell_aspect_ratio"] = row["m_cell_major"] / row["m_cell_minor"] if row["m_cell_minor"] > 0 else 1
+        row["m_cell_extent"] = float(cell_props.extent)
+        
+        row["m_nuc_area"] = n_area
+        row["m_nuc_major"] = float(nuc_props.major_axis_length)
+        row["m_nuc_minor"] = float(nuc_props.minor_axis_length)
+        row["m_nuc_eccentricity"] = float(nuc_props.eccentricity)
+        row["m_nuc_circularity"] = 4 * np.pi * n_area / (nuc_props.perimeter**2) if nuc_props.perimeter > 0 else 0
+        row["m_nuc_solidity"] = float(nuc_props.solidity)
+        
+        # Lobes: morphological erosion
+        row["m_nuc_lobes"] = 1.0
+        if n_area > 1000:
+            smoothed = ndi.gaussian_filter(nuc_mask.astype(float), sigma=4.0) > 0.5
+            eroded = morphology.binary_erosion(smoothed, disk(8))
+            eroded = remove_small_objects(eroded, min_size=150)
+            row["m_nuc_lobes"] = float(label(eroded).max())
+            
+        # Irregularity: (hull - area) / hull
+        try:
+            from skimage.morphology import convex_hull_image
+            hull = convex_hull_image(nuc_mask)
+            ha = float(hull.sum())
+            row["m_nuc_irregularity"] = (ha - n_area) / ha if ha > 0 else 0
+            row["m_nuc_convex_deficiency"] = ha - n_area
+        except:
+            row["m_nuc_irregularity"] = 0.0
+            row["m_nuc_convex_deficiency"] = 0.0
+            
+        row["m_nc_ratio"] = n_area / c_area if c_area > 0 else 0
+        
+        # 2. Color (Lab)
+        lab = color.rgb2lab(img_rgb)
+        L = lab[:, :, 0]; a = lab[:, :, 1]; b = lab[:, :, 2]
+        
+        row["m_nuc_mean_l"] = float(L[nuc_mask].mean())
+        row["m_nuc_mean_a"] = float(a[nuc_mask].mean())
+        row["m_nuc_mean_b"] = float(b[nuc_mask].mean())
+        row["m_nuc_intensity_std"] = float(L[nuc_mask].std())
+        
+        row["m_cyto_mean_l"] = float(L[cyto_mask].mean()) if cyto_mask.any() else 0
+        row["m_cyto_mean_a"] = float(a[cyto_mask].mean()) if cyto_mask.any() else 0
+        row["m_cyto_mean_b"] = float(b[cyto_mask].mean()) if cyto_mask.any() else 0
+        
+        hsv = color.rgb2hsv(img_rgb)
+        row["m_cyto_mean_hue"] = float(hsv[cyto_mask, 0].mean()) if cyto_mask.any() else 0
+        
+        # Texture (GLCM)
+        gray = color.rgb2gray(img_rgb)
+        gray_uint = (gray * 255).astype(np.uint8)
+        minr, minc, maxr, maxc = nuc_props.bbox
+        nuc_crop = gray_uint[minr:maxr, minc:maxc]
+        mask_crop = nuc_mask[minr:maxr, minc:maxc]
+        nuc_crop[~mask_crop] = 0
+        
+        try:
+            glcm = feature.graycomatrix(nuc_crop, [2], [0, np.pi/4, np.pi/2, 3*np.pi/4], 256, symmetric=True, normed=True)
+            row["m_nuc_glcm_contrast"] = float(feature.graycoprops(glcm, 'contrast').mean())
+            row["m_nuc_glcm_homogeneity"] = float(feature.graycoprops(glcm, 'homogeneity').mean())
+            row["m_nuc_glcm_energy"] = float(feature.graycoprops(glcm, 'energy').mean())
+            row["m_nuc_glcm_correlation"] = float(feature.graycoprops(glcm, 'correlation').mean())
+        except:
+            row["m_nuc_glcm_contrast"] = 0.0
+            row["m_nuc_glcm_homogeneity"] = 0.0
+            row["m_nuc_glcm_energy"] = 0.0
+            row["m_nuc_glcm_correlation"] = 0.0
+            
+        return row
+    except Exception as e:
+        row["m_seg_quality"] = "error"
+        for col in M_COLUMNS:
+            if col not in row: row[col] = 0.0
+        return row
+
+def wrapper(args):
+    return process_image(*args)
 
 def main():
     print(f"Reading {ATLAS_CSV} ...")
-    atlas = pd.read_csv(ATLAS_CSV, dtype=str)
-
-    # Only finalized records
-    finalized = atlas[atlas["path_status"] == "finalized"][["image_id", "filename"]].copy()
-    finalized = finalized.dropna(subset=["image_id", "filename"])
-    total = len(finalized)
-    print(f"Found {total} finalized records to process.")
-    print(f"Output → {OUTPUT_CSV}\n")
-
-    from concurrent.futures import ProcessPoolExecutor
-    import multiprocessing
-    num_workers = multiprocessing.cpu_count()
-    print(f"Using {num_workers} workers...")
-
-    results = []
-    quality_counts = {}
-    error_ids = []
-
-    # Prepare tasks
+    atlas = pd.read_csv(ATLAS_CSV, low_memory=False)
+    
+    # Process all images that exist
     tasks = []
-    for _, row in finalized.iterrows():
-        tasks.append((IMAGES_DIR / row["filename"], row["image_id"]))
-
+    for _, row in atlas.iterrows():
+        img_id = row["image_id"]
+        filename = row["filename"]
+        path = IMAGES_DIR / filename
+        if path.exists():
+            tasks.append((path, img_id))
+            
+    total = len(tasks)
+    print(f"Processing {total} images...")
+    
+    num_workers = multiprocessing.cpu_count()
+    results = []
+    
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        # Submit all tasks
-        futures = [executor.submit(process_image, path, eid) for path, eid in tasks]
+        results = list(executor.map(wrapper, tasks))
         
-        for i, future in enumerate(futures, 1):
-            try:
-                result = future.result()
-                results.append(result)
-                
-                q = result.get("m_seg_quality", "error")
-                quality_counts[q] = quality_counts.get(q, 0) + 1
-                if q == "error":
-                    error_ids.append(result.get("image_id", "unknown"))
-
-                if i % 100 == 0 or i == total:
-                    print(f"[{i}/{total}] Completed — {q}")
-            except Exception as e:
-                print(f"Worker error: {e}")
-
-    # Build DataFrame with consistent column order
     df = pd.DataFrame(results)
-    for col in M_COLUMNS:
-        if col not in df.columns:
-            df[col] = np.nan
-    df = df[M_COLUMNS]
-
+    df = df[M_COLUMNS] # ensure column order
     df.to_csv(OUTPUT_CSV, index=False)
-
-    print(f"\n{'='*60}")
-    print(f"Done. {total} images processed → {OUTPUT_CSV}")
-    print(f"\nQuality flag summary:")
-    for flag, count in sorted(quality_counts.items()):
-        print(f"  {flag:20s} {count:6d}")
-    if error_ids:
-        print(f"\nErrors ({len(error_ids)}):")
-        for eid in error_ids[:20]:
-            print(f"  {eid}")
-        if len(error_ids) > 20:
-            print(f"  ... and {len(error_ids) - 20} more")
-    print("="*60)
-
+    print(f"\nDone! Saved to {OUTPUT_CSV}")
 
 if __name__ == "__main__":
     main()
