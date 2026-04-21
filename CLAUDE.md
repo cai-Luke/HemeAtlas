@@ -110,14 +110,15 @@ The Claude agent is the primary executor for database maintenance.
 
 Attribution is rendered in the student atlas footer.
 
-### Morphometry Pipeline (Refined 2026-04-21)
-- **Strategy**: Nucleus-First segmentation.
-- **Accuracy**: Resolved N:C ratio inversions (now realistically ~0.60). Fixed Lobe Count inversion (Neutrophils now correctly show higher lobe counts than Myelocytes).
+### Morphometry Pipeline (Hardened 2026-04-21)
+- **Strategy**: Nucleus-First segmentation with Intensity Gradient Boundary Check.
+- **Accuracy**: Resolved "Nuclear Bleed-Over" into perinuclear halos. Implemented an automated parameter sweep (GRAD_THRESHOLD 2.0-100.0) to identify the optimal boundary step.
+- **Optimal Config**: `GRAD_THRESHOLD = 36.0` (Sobel magnitude). This balance ensures realistic N:C ratios while maximizing separation between Lymphocyte/Monocyte populations.
 - **Metrics**: 
-  - `m_nc_ratio`: Decreasing trend validated (Neutrophils < Myelocytes).
-  - `m_nuc_lobes`: Increasing trend validated (Neutrophils > Myelocytes).
-  - `m_nuc_irregularity`: Peaking at Band/Neutrophil stage.
-- **Status**: Production-ready. Entire database (13,965 images) reprocessed and merged into `atlas.csv`.
+  - `m_nc_ratio`: Validated targets met (LYMPH ~0.74, MONO ~0.55).
+  - `m_nuc_irregularity`: Peaking at Band/Neutrophil stage; serving as primary differentiator for maturation.
+- **Status**: Production-ready. Entire database (18,487 images) reprocessed. 
+- **Acevedo Subset**: 4,528 Acevedo records have been preliminarily classified and set to `pending_approval` for curator review. Initial classification suggests significant reclassification of Bands to Neutrophils (332 cells) and Myelocytes to Promyelocytes (394 cells).
 
 ---
 

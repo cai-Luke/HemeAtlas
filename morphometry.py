@@ -12,7 +12,7 @@ import pandas as pd
 from PIL import Image
 from pathlib import Path
 from skimage import color, filters, morphology, measure, feature
-from skimage.morphology import disk, binary_opening, binary_closing, remove_small_objects
+from skimage.morphology import disk, binary_erosion, binary_opening, binary_closing, remove_small_objects
 from skimage.measure import label, regionprops
 from scipy import ndimage as ndi
 from concurrent.futures import ProcessPoolExecutor
@@ -43,6 +43,7 @@ M_COLUMNS = [
     "m_cyto_mean_l", "m_cyto_mean_a", "m_cyto_mean_b", "m_cyto_mean_hue",
     "m_nuc_glcm_contrast", "m_nuc_glcm_homogeneity",
     "m_nuc_glcm_energy", "m_nuc_glcm_correlation",
+    "m_nuc_max_indent", "m_nuc_indent_purity", "m_nuc_indent_depth",
     "m_seg_quality",
 ]
 
@@ -50,7 +51,7 @@ M_COLUMNS = [
 # Segmentation
 # ---------------------------------------------------------------------------
 
-def segment_cell(img_rgb):
+def segment_cell(img_rgb, grad_threshold=36.0):
     """
     Nucleus-First Segmentation Strategy.
     1. Sample background from corners.
@@ -86,6 +87,35 @@ def segment_cell(img_rgb):
     best_nuc = min(nuc_props, key=lambda r: math.dist(r.centroid, (h/2, w/2)))
     nuc_mask = (labeled_nuc == best_nuc.label)
     
+    # --- Nuclear Bleed-Over Fix ---
+    # 1. Candidate eroded mask
+    nuc_eroded = binary_erosion(nuc_mask, disk(3))
+    boundary_ring = nuc_mask & ~nuc_eroded
+    
+    # 2. Measure gradient across boundary ring
+    # L is Lab luminance channel (0-100 range)
+    grad_mag = ndi.generic_gradient_magnitude(L, ndi.sobel)
+    
+    if boundary_ring.any():
+        boundary_gradient = grad_mag[boundary_ring].mean()
+        
+        # 3. Threshold decision
+        if boundary_gradient < grad_threshold:
+            # Shallow gradient = likely halo bleed. Use eroded version.
+            nuc_corrected = nuc_eroded
+        else:
+            # Steep gradient = real edge. Keep original.
+            nuc_corrected = nuc_mask
+    else:
+        nuc_corrected = nuc_mask
+
+    # 4. Safety floor: never smaller than a disk(6) seed
+    nuc_seed = binary_erosion(nuc_mask, disk(6))
+    nuc_final = nuc_corrected | nuc_seed
+    
+    nuc_mask = nuc_final
+    # ------------------------------
+    
     # 3. Cell Growth
     # Candidate mask: Anything darker than background and not too yellow
     candidate_mask = (L < (bg_l - 5)) & (b < (bg_b + 5))
@@ -111,13 +141,13 @@ def segment_cell(img_rgb):
 # Processing
 # ---------------------------------------------------------------------------
 
-def process_image(image_path: Path, image_id: str) -> dict:
+def process_image(image_path: Path, image_id: str, grad_threshold=4.0) -> dict:
     row = {"image_id": image_id}
     try:
         img = Image.open(image_path).convert("RGB")
         img_rgb = np.array(img, dtype=np.float64) / 255.0
         
-        cell_mask, nuc_mask, cyto_mask, quality = segment_cell(img_rgb)
+        cell_mask, nuc_mask, cyto_mask, quality = segment_cell(img_rgb, grad_threshold=grad_threshold)
         row["m_seg_quality"] = quality
         
         if quality == "no_nucleus":
@@ -166,9 +196,37 @@ def process_image(image_path: Path, image_id: str) -> dict:
             ha = float(hull.sum())
             row["m_nuc_irregularity"] = (ha - n_area) / ha if ha > 0 else 0
             row["m_nuc_convex_deficiency"] = ha - n_area
+            
+            # Indent Analysis
+            deficiency = hull & ~nuc_mask
+            labeled_def = label(deficiency)
+            if labeled_def.max() > 0:
+                def_props = regionprops(labeled_def)
+                max_comp = max(def_props, key=lambda r: r.area)
+                
+                # 1. Max Indent: area of largest concavity / major_axis^2 (as requested)
+                major = float(nuc_props.major_axis_length)
+                row["m_nuc_max_indent"] = max_comp.area / (major**2) if major > 0 else 0.0
+                
+                # 2. Purity: ratio of largest concavity to total deficiency
+                total_def = float(deficiency.sum())
+                row["m_nuc_indent_purity"] = max_comp.area / total_def if total_def > 0 else 0.0
+                
+                # 3. Depth: max depth of the largest concavity
+                comp_mask = (labeled_def == max_comp.label)
+                dist = ndi.distance_transform_edt(comp_mask)
+                row["m_nuc_indent_depth"] = float(dist.max())
+            else:
+                row["m_nuc_max_indent"] = 0.0
+                row["m_nuc_indent_purity"] = 0.0
+                row["m_nuc_indent_depth"] = 0.0
+                
         except:
             row["m_nuc_irregularity"] = 0.0
             row["m_nuc_convex_deficiency"] = 0.0
+            row["m_nuc_max_indent"] = 0.0
+            row["m_nuc_indent_purity"] = 0.0
+            row["m_nuc_indent_depth"] = 0.0
             
         row["m_nc_ratio"] = n_area / c_area if c_area > 0 else 0
         
@@ -219,6 +277,13 @@ def wrapper(args):
     return process_image(*args)
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--threshold", type=float, default=36.0, help="Gradient threshold for nucleus correction")
+    args_cli = parser.parse_args()
+    
+    threshold = args_cli.threshold
+    print(f"Using GRAD_THRESHOLD = {threshold}")
     print(f"Reading {ATLAS_CSV} ...")
     atlas = pd.read_csv(ATLAS_CSV, low_memory=False)
     
@@ -240,7 +305,7 @@ def main():
             
         path = IMAGES_DIR / filename
         if path.exists():
-            tasks.append((path, img_id))
+            tasks.append((path, img_id, threshold))
             
     total = len(tasks)
     print(f"Skipped {skipped_aggl} agglutination records.")
