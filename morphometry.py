@@ -222,16 +222,28 @@ def main():
     print(f"Reading {ATLAS_CSV} ...")
     atlas = pd.read_csv(ATLAS_CSV, low_memory=False)
     
-    # Process all images that exist
+    # Process all images that exist, excluding agglutination
     tasks = []
+    skipped_aggl = 0
     for _, row in atlas.iterrows():
         img_id = row["image_id"]
         filename = row["filename"]
+        
+        # Check for agglutination in tech_note, tags, or commentary
+        note = str(row.get("tech_note", "")).lower()
+        tags = str(row.get("tags", "")).lower()
+        comm = str(row.get("path_commentary", "")).lower()
+        
+        if "aggl" in note or "aggl" in tags or "aggl" in comm:
+            skipped_aggl += 1
+            continue
+            
         path = IMAGES_DIR / filename
         if path.exists():
             tasks.append((path, img_id))
             
     total = len(tasks)
+    print(f"Skipped {skipped_aggl} agglutination records.")
     print(f"Processing {total} images...")
     
     num_workers = multiprocessing.cpu_count()
