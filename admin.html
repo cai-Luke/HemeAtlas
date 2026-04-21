@@ -378,6 +378,10 @@
         <span class="si-label">✏ Corrected</span>
         <span class="si-count" id="sc-corrected">0</span>
       </div>
+      <div class="sidebar-item" data-view="pending" onclick="setView('pending')">
+        <span class="si-label">⏳ Pending Review</span>
+        <span class="si-count" id="sc-pending">0</span>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
@@ -887,6 +891,7 @@ function updateSidebarCounts(){
   document.getElementById('sc-all').textContent=nonExcl.filter(r=>!isAberration(r)).length;
   document.getElementById('sc-flagged').textContent=nonExcl.filter(r=>r.discussion_flag==='true').length;
   document.getElementById('sc-corrected').textContent=nonExcl.filter(r=>r.correction_label).length;
+  document.getElementById('sc-pending').textContent=nonExcl.filter(r=>r.path_status==='pending_approval').length;
   const excl=recs.filter(r=>r.path_status==='excluded').length;
   const exclEl=document.getElementById('stat-excluded');if(exclEl)exclEl.textContent=excl;
   const abEl=document.getElementById('sc-aberrations');
@@ -1001,6 +1006,7 @@ function filteredRecords(){
   if(G.currentView==='all'){recs=recs.filter(r=>r.path_status!=='excluded'&&!isAberration(r));}
   else if(G.currentView==='flagged'){recs=recs.filter(r=>r.path_status!=='excluded'&&r.discussion_flag==='true'&&!isAberration(r));}
   else if(G.currentView==='corrected'){recs=recs.filter(r=>r.path_status!=='excluded'&&r.correction_label&&!isAberration(r));}
+  else if(G.currentView==='pending'){recs=recs.filter(r=>r.path_status==='pending_approval');}
   else if(G.currentView==='excluded'){recs=recs.filter(r=>r.path_status==='excluded');}
   else if(G.currentView.startsWith('excluded:')){
     const lbl=G.currentView.slice(9);
@@ -1047,7 +1053,7 @@ function renderGallery(){
 function renderCatHeader(recs){
   const el=document.getElementById('cat-header');
   const view=G.currentView;
-  const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
+  const viewNames={'all':'All Cells','flagged':'Flagged for Discussion','corrected':'Corrected Identities','pending':'Pending Review','excluded':'Excluded from Atlas','aberrations':'Aberrations','all-tagged':'All Tagged Cells'};
   if(G.currentView.startsWith('abtag:'))viewNames[G.currentView]=G.currentView.slice(6).replace(/\b\w/g,c=>c.toUpperCase());
   if(G.currentView.startsWith('excluded:')){const lbl=G.currentView.slice(9);viewNames[G.currentView]='Excluded — '+(CELL_DISPLAY[lbl]||lbl);}
   const title=viewNames[view]||(CELL_DISPLAY[view]||view);
