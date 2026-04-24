@@ -44,6 +44,52 @@
   .stat-badge{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);padding:5px 10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
   .stat-badge strong{color:var(--text);font-weight:600}
 
+
+  .btn-payload {
+    position: relative;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-payload:hover { filter: brightness(1.1); }
+
+  .payload-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    padding: 0 4px;
+  }
+
+  .btn-classify {
+    background: var(--surface2);
+    color: var(--text1);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-classify:hover { background: var(--surface3); }
+  .btn-classify.active {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fbbf24;
+  }
   /* ── LAYOUT ── */
   .app-body{display:flex;height:calc(100vh - 56px);overflow:hidden}
   .sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:12px 0}
@@ -307,6 +353,13 @@
     <div class="stat-badge">🚫 <strong id="stat-excluded">0</strong> excluded</div>
     <button class="btn sel-mode-btn" id="sel-mode-btn" onclick="toggleSelectionMode()">☐ Select</button>
     <button class="btn primary" onclick="showApprovalPanel()">✅ Approve</button>
+    <button class="btn-classify" id="btn-classify-mode" onclick="toggleClassifyMode()">
+      🏷 Classify Mode
+    </button>
+    <button class="btn-payload" id="btn-generate-payload" onclick="openPayloadModal()">
+      📋 Agent Payload
+      <span class="payload-badge" id="payload-badge" style="display:none">0</span>
+    </button>
   </div>
 </div>
 
@@ -653,6 +706,24 @@ const CELL_DISPLAY = {
   'MONOCYTE':'Monocyte','EOSINOPHIL':'Eosinophil','BASOPHIL':'Basophil',
   'PLASMA':'Plasma Cell','NRBC':'NRBC','OTHER':'Other'
 };
+
+const CLASSIFY_KEYS = [
+  { key: '1', name: 'NEUTROPHIL',     short: 'Seg' },
+  { key: '2', name: 'BAND',           short: 'Band' },
+  { key: '3', name: 'LYMPHOCYTE',     short: 'Lymph' },
+  { key: '4', name: 'MONOCYTE',       short: 'Mono' },
+  { key: '5', name: 'EOSINOPHIL',     short: 'Eos' },
+  { key: '6', name: 'BASOPHIL',       short: 'Baso' },
+  { key: '7', name: 'BLAST',          short: 'Blast' },
+  { key: '8', name: 'PROMYELOCYTE',   short: 'Promyelo' },
+  { key: '9', name: 'MYELOCYTE',      short: 'Myelo' },
+  { key: '0', name: 'METAMYELOCYTE',  short: 'Meta' },
+  { key: 'n', name: 'NRBC',          short: 'NRBC' },
+  { key: 'p', name: 'PLASMA',        short: 'Plasma' },
+  { key: 'r', name: 'REACTIVE LYMP', short: 'React Lymp' },
+  { key: 'o', name: 'OTHER',         short: 'Other' },
+];
+
 const CORRECTION_REASONS = ['misidentification','poor quality excluded','reclassification','teaching case','other'];
 const CSV_FIELDS = [
   'image_id','filename','case_tag','uploaded_by','upload_date',
@@ -667,6 +738,12 @@ const CSV_FIELDS = [
 // ── STATE ──────────────────────────────────────────────
 let G = {
   records:{},  // filename → record
+  actionQueue: [],   // accumulated curator instructions for agent handoff
+  _sessionId: Date.now().toString(36),  // stable ID for this browser session
+  classifyMode: false,
+  classifyQueue: [],      // image_ids of pending_approval cells, shuffled
+  classifyIdx: 0,         // current position in classifyQueue
+  classifyConfidence: 'classic',  // toggles per-cell
   currentView:'all',
   currentFilter:'all',
   searchQuery:'',
@@ -679,6 +756,21 @@ let G = {
   _bulkTagMode:'add',
   _bulkConfVal:'classic',
 };
+
+function queueAction(obj) {
+  obj.timestamp = new Date().toISOString();
+  obj.session_id = G._sessionId;
+  G.actionQueue.push(obj);
+  updatePayloadBadge();
+}
+
+function updatePayloadBadge() {
+  const badge = document.getElementById('payload-badge');
+  if (badge) {
+    badge.textContent = G.actionQueue.length;
+    badge.style.display = G.actionQueue.length > 0 ? 'inline-block' : 'none';
+  }
+}
 
 // ── IMAGE URL ─────────────────────────────────────────
 // Images are served as static files from ./images/.
@@ -1597,6 +1689,19 @@ document.addEventListener('wheel',e=>{
   document.getElementById('zoom-img').style.transform=`rotate(${G._detailRotation}deg) scaleX(${scaleX}) scale(${zoomScale})`;
 },{passive:false});
 document.addEventListener('keydown',e=>{
+  // Classify mode intercepts all keys when active
+  if (G.classifyMode) {
+    if (e.key === 'Escape') { toggleClassifyMode(); return; }
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); skipClassifyCell(); return; }
+    if (e.key.toLowerCase() === 'c') { 
+      setClassifyConf(G.classifyConfidence === 'classic' ? 'borderline' : 'classic'); 
+      return; 
+    }
+    const match = CLASSIFY_KEYS.find(k => k.key === e.key.toLowerCase());
+    if (match) { e.preventDefault(); commitClassify(match.name); return; }
+    return; // consume all other keys in classify mode
+  }
+
   if(e.key==='Escape'){
     if(!document.getElementById('zoom-overlay').classList.contains('hidden')){closeZoom();return;}
     if(!document.getElementById('detail-overlay').classList.contains('hidden')){closeDetailBtn();return;}
@@ -2016,5 +2121,47 @@ function saveDetailCommentary(filename){
 
 window.addEventListener('hashchange',checkPermalink);
 </script>
+
+<div class="modal-overlay hidden" id="payload-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div class="modal payload-modal-inner" style="background:#fff;border-radius:12px;padding:20px;">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h3 style="margin:0;font-size:16px;">📋 Agent Payload</h3>
+      <button class="modal-close" onclick="closePayloadModal()" style="background:none;border:none;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div class="payload-summary" id="payload-summary"></div>
+    <textarea class="payload-textarea" id="payload-textarea" readonly spellcheck="false"></textarea>
+    <div class="payload-footer" style="margin-top:12px;">
+      <button class="btn primary" onclick="copyPayload()">📋 Copy to Clipboard</button>
+      <button class="btn btn-danger" onclick="clearPayloadQueue()">🗑 Clear Queue</button>
+      <span class="payload-copied-msg" id="payload-copied-msg" style="display:none">✅ Copied!</span>
+    </div>
+  </div>
+</div>
+
+
+<div class="classify-overlay hidden" id="classify-overlay">
+  <div class="classify-header">
+    <div class="classify-title">🏷 Classify Mode — <span id="cl-progress">0 / 0</span></div>
+    <div class="classify-meta" id="cl-meta"></div>
+    <div class="classify-controls">
+      <button class="cl-conf-btn" id="cl-conf-classic" onclick="setClassifyConf('classic')">Classic</button>
+      <button class="cl-conf-btn" id="cl-conf-borderline" onclick="setClassifyConf('borderline')">Borderline</button>
+      <button class="btn" onclick="skipClassifyCell()">Skip →</button>
+      <button class="btn btn-danger" onclick="toggleClassifyMode()">✕ Exit</button>
+    </div>
+  </div>
+  <div class="classify-body">
+    <div class="classify-image-wrap">
+      <img id="cl-img" src="" alt="" class="classify-img" />
+      <div class="classify-flash hidden" id="cl-flash"></div>
+    </div>
+    <div class="classify-sidebar">
+      <div class="classify-morph" id="cl-morph"></div>
+      <div class="classify-keypad" id="cl-keypad"></div>
+      <div class="classify-hint">Number keys to classify · C = toggle confidence · → skip</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
