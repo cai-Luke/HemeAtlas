@@ -122,7 +122,9 @@
   .hub-train-img{width:150px;height:150px;object-fit:cover;border-radius:var(--radius-lg);border:1.5px solid var(--border2)}
   .hub-keypad-preview{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;opacity:0.45;pointer-events:none;width:100%}
   .hub-key-chip{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 0;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
-  .hub-secondary{display:flex;gap:16px;width:100%;max-width:900px}
+  .hub-tools{display:flex;gap:16px;width:100%;max-width:900px}
+  .hub-resources{display:flex;gap:16px;width:100%;max-width:900px}
+  .hub-resources .hub-tile{flex:1}
   .hub-tile{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:6px}
   .hub-tile:hover{border-color:var(--accent);background:var(--surface2)}
   .hub-tile-icon{font-size:20px}
@@ -1324,9 +1326,9 @@ function renderHub(){
       </div>
     </div>`;
 
-  // ── hub-secondary (built via JS so we can appendChild tag tile) ──
+  // ── hub-tools row (Compare, Diff Counter, About) ──
   const hubSecondaryEl=document.createElement('div');
-  hubSecondaryEl.className='hub-secondary';
+  hubSecondaryEl.className='hub-tools';
   hubSecondaryEl.innerHTML=`
     <div class="hub-tile" onclick="setMode('compare')">
       <div class="hub-tile-icon">⇄</div>
@@ -1343,8 +1345,12 @@ function renderHub(){
       <div class="hub-tile-title">About</div>
       <div class="hub-tile-desc">Methods, datasets, and attribution</div>
     </div>`;
+  hub.appendChild(hubSecondaryEl);
 
-  // Tag Gallery tile with featured tag previews
+  // ── hub-resources row (Tag Gallery + CytoAtlas) ──
+  const hubResourcesEl=document.createElement('div');
+  hubResourcesEl.className='hub-resources';
+
   const featuredTags=[
     {tag:'auer rods',label:'Auer Rods'},
     {tag:'chediak higashi',label:'Chediak Higashi'},
@@ -1379,7 +1385,6 @@ function renderHub(){
     </div>`;
   const hasTags=Object.values(S.records).some(r=>r.tags&&r.tags.trim());
   if(!hasTags) tagTileEl.style.display='none';
-  hubSecondaryEl.appendChild(tagTileEl);
 
   const cytoTileEl=document.createElement('div');
   cytoTileEl.className='hub-tile';
@@ -1397,9 +1402,10 @@ function renderHub(){
            style="width:52px;height:52px;object-fit:cover;border-radius:6px;
                   border:1.5px solid var(--border);flex-shrink:0;margin-left:8px">
     </div>`;
-  hubSecondaryEl.appendChild(cytoTileEl);
 
-  hub.appendChild(hubSecondaryEl);
+  hubResourcesEl.appendChild(tagTileEl);
+  hubResourcesEl.appendChild(cytoTileEl);
+  hub.appendChild(hubResourcesEl);
 
   // ── Cell Census ──
   hub.insertAdjacentHTML('beforeend',`
