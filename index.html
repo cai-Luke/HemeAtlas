@@ -2482,6 +2482,9 @@ function buildWeightedQueue(){
       const cleanSrc=r.case_tag==='cellwiki'||r.case_tag==='ku-optofil';
       if(!cleanSrc||r.tags&&r.tags.trim()) return;
     }
+    // Exclude CW_-prefixed plain lymphocytes — Cell Wiki LYMPHOCYTE images are
+    // overly textbook and skew the trainer; REACTIVE LYMP is kept.
+    if(lbl === 'LYMPHOCYTE' && r.image_id && r.image_id.startsWith('CW_')) return;
     if(!buckets[lbl]) buckets[lbl] = [];
     buckets[lbl].push(r);
   });
