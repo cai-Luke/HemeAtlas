@@ -572,6 +572,7 @@
 <!-- FLOATING ACTION BAR (selection mode) -->
 <div class="fab hidden" id="fab">
   <span class="fab-count" id="fab-count">0 selected</span>
+  <button class="fab-btn" id="fab-select-all" onclick="selectAll()">☐ Select all</button>
   <button class="fab-btn" onclick="openBulkPanel('commentary')">✍ Commentary</button>
   <button class="fab-btn fab-green" onclick="openBulkPanel('approve')">✅ Approve</button>
   <button class="fab-btn" onclick="openBulkPanel('reclassify')">🔀 Reclassify</button>
@@ -1914,12 +1915,33 @@ function clearSelection(){
   renderGallery();
 }
 
+function selectAll(){
+  const recs = filteredRecords();
+  const allVisible = recs.map(r => r.filename);
+  const allAlreadySelected = allVisible.every(f => G.selected.has(f));
+  if(allAlreadySelected){
+    // Toggle: deselect all visible
+    allVisible.forEach(f => G.selected.delete(f));
+  } else {
+    allVisible.forEach(f => G.selected.add(f));
+  }
+  updateFAB();
+  renderGallery();
+}
+
 function updateFAB(){
-  const fab=document.getElementById('fab');
-  const n=G.selected.size;
-  if(G.selectionMode&&n>0){
+  const fab = document.getElementById('fab');
+  const n = G.selected.size;
+  if(G.selectionMode){
     fab.classList.remove('hidden');
-    document.getElementById('fab-count').textContent=`${n} selected`;
+    document.getElementById('fab-count').textContent =
+      n > 0 ? `${n} selected` : 'None selected';
+    // Update Select All button label
+    const recs = filteredRecords();
+    const allVisible = recs.map(r => r.filename);
+    const allSelected = allVisible.length > 0 && allVisible.every(f => G.selected.has(f));
+    const saBtn = document.getElementById('fab-select-all');
+    if(saBtn) saBtn.textContent = allSelected ? '☑ Deselect all' : '☐ Select all';
   } else {
     fab.classList.add('hidden');
   }
