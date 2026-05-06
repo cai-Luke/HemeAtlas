@@ -33,7 +33,7 @@
   .wl-title{font-family:'Instrument Serif',Georgia,serif;font-size:52px;color:var(--text);letter-spacing:-.5px;line-height:1.1;text-align:center;margin-bottom:8px}
   .wl-title em{font-style:italic;color:var(--accent)}
   .wl-sub{font-size:15px;color:var(--text3);text-align:center;margin-bottom:48px;max-width:400px;line-height:1.7}
-  .wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 36px;width:420px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-xl)}
+  .wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 36px;width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-xl)}
   .wl-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px}
   .wl-input{width:100%;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
   .wl-input:focus{border-color:var(--accent)}
@@ -633,6 +633,89 @@
   .dc-dashboard-wrapper h3{font-family:'DM Mono',monospace;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:12px;margin-top:0;padding-bottom:8px;border-bottom:1px solid var(--border)}
   @media(max-width:1024px){.dc-dashboard-wrapper{grid-template-columns:1fr}}
 
+  /* ── DESKTOP: hide mobile-only elements ── */
+  .sb-toggle-btn{display:none}
+  .sb-backdrop{display:none}
+
+  /* ── MOBILE: max-width 768px ── */
+  @media(max-width:768px){
+    /* Change 9 — body height (Mobile Safari) */
+    html,body{height:100%}
+    .app{height:100dvh}
+
+    /* Change 2 — sidebar as off-screen drawer */
+    .sidebar{position:fixed;left:-220px;top:0;bottom:0;z-index:250;width:210px;transition:left 0.25s ease;box-shadow:none}
+    .sidebar.sb-open{left:0;box-shadow:4px 0 24px rgba(0,0,0,0.5)}
+    .sb-backdrop{display:none;position:fixed;inset:0;z-index:240;background:rgba(0,0,0,0.55)}
+    .sb-backdrop.sb-open{display:block}
+    .sb-toggle-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:18px;cursor:pointer;flex-shrink:0;transition:all 0.15s}
+    .sb-toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* Change 3 — header mobile layout */
+    .header{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px;row-gap:6px}
+    .logo-sep{display:none}
+    .logo-sub{display:none}
+    .stat-pill{display:none}
+    .logo-mark{font-size:15px}
+    .mode-toggle{flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .mode-toggle::-webkit-scrollbar{display:none}
+    .mode-btn{white-space:nowrap;padding:5px 12px}
+    .about-btn{padding:5px 10px;font-size:13px}
+    .header-search{flex:0 0 100%;order:10;max-width:100%;margin-left:0}
+    .conf-filter{order:11;flex:0 0 100%;gap:6px}
+    .conf-pill{padding:5px 14px;font-size:12px}
+
+    /* Change 4 — detail overlay panel */
+    .detail-overlay{padding:12px;align-items:flex-end}
+    .detail-panel{width:100%;max-width:100%;height:92vh;max-height:92vh;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
+    .dp-body{flex-direction:column}
+    .dp-img-col{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:12px 14px;overflow-y:visible}
+    .dp-cell-img{max-height:180px}
+    .dp-info-col{padding:14px 14px}
+    .dp-nav{top:68px}
+    .dp-nav.prev{left:6px}
+    .dp-nav.next{right:6px}
+    .related-grid{grid-template-columns:repeat(3,1fr)}
+
+    /* Change 5 — trainer config screen */
+    #tr-config-screen > div{grid-template-columns:1fr !important}
+    #tr-config-screen > div > div:nth-child(1){order:2}
+    #tr-config-screen > div > div:nth-child(2){order:1}
+    #tr-config-screen > div > div:nth-child(3){order:3}
+    .tr-config{padding:20px 18px}
+
+    /* Change 6 — hub layout */
+    .hub{padding:20px 14px;gap:16px}
+    .hub-primary{flex-direction:column}
+    .hub-tools{flex-direction:column;gap:10px}
+    .hub-resources{flex-direction:column;gap:10px}
+    .hub-card{padding:18px 16px}
+    .hub-mosaic{grid-template-columns:repeat(4,1fr)}
+
+    /* Change 7 — compare mode */
+    .compare-cols{grid-template-columns:1fr;overflow:visible}
+    .compare{overflow-y:auto}
+
+    /* Change 8 — touch targets */
+    .sb-item{padding:10px 10px}
+    .cell-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+    .dp-close{width:36px;height:36px}
+    .toast{right:50%;transform:translateX(50%);bottom:16px}
+  }
+
+  /* ── MOBILE: max-width 480px ── */
+  @media(max-width:480px){
+    /* Change 1 — welcome card title */
+    .wl-title{font-size:38px}
+    .wl-sub{font-size:13px}
+    /* Change 3 — further tighten mode buttons */
+    .mode-btn{padding:5px 9px;font-size:11px}
+  }
+
+  @supports not (height:100dvh){
+    .app{height:100%}
+  }
+
 </style>
 </head>
 <body>
@@ -651,6 +734,7 @@
 <!-- APP -->
 <div class="app" id="app">
   <div class="header">
+    <button class="sb-toggle-btn" id="sb-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle cell type menu">☰</button>
     <div class="logo-mark" onclick="goHome()">Heme <em>Atlas</em></div>
     <div class="logo-sep"></div>
     <div class="logo-sub">Student Reference</div>
@@ -674,7 +758,7 @@
     <button class="about-btn" id="about-btn" onclick="openAbout()">ⓘ About</button>
   </div>
   <div class="body">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <div class="sb-section">Cell Types</div>
       <div class="sb-list" id="sb-list"></div>
       <div class="sb-divider" id="sb-ab-divider" style="display:none"></div>
@@ -684,6 +768,7 @@
       </div>
       <div class="sb-list" id="sb-aberration-list" style="flex:0 0 auto;max-height:200px"></div>
     </div>
+    <div class="sb-backdrop" id="sb-backdrop" onclick="closeSidebar()"></div>
     <div class="main" id="main">
       <div id="grid-area" class="hidden">
         <div class="grid-header">
@@ -1534,7 +1619,7 @@ function buildSidebar(){
   const allDiv=document.createElement('div');allDiv.className='sb-all';
   const total=Object.keys(S.records).length;
   allDiv.innerHTML=`<span class="sb-all-name">All Cells</span><span class="sb-count">${total}</span>`;
-  allDiv.onclick=()=>setView('all');list.appendChild(allDiv);
+  allDiv.onclick=()=>{setView('all');if(window.innerWidth<=768)closeSidebar();};list.appendChild(allDiv);
   // Divider
   const div=document.createElement('div');div.className='sb-divider';list.appendChild(div);
   // Per type
@@ -1542,7 +1627,7 @@ function buildSidebar(){
   sorted.forEach(key=>{
     const item=document.createElement('div');item.className='sb-item';item.id='sb-'+key;
     item.innerHTML=`<span class="sb-item-name">${esc(CELL_DISPLAY[key]||key)}</span><span class="sb-count">${counts[key]}</span>`;
-    item.onclick=()=>setView(key);
+    item.onclick=()=>{setView(key);if(window.innerWidth<=768)closeSidebar();};
     list.appendChild(item);
   });
 }
@@ -1572,7 +1657,7 @@ function buildAberrationSidebar(){
   Object.keys(tagCounts).sort().forEach(tag=>{
     const item=document.createElement('div');item.className='sb-item';item.id='sb-abtag-'+tag;
     item.innerHTML=`<span class="sb-item-name" style="font-size:11px">${esc(tag)}</span><span class="sb-count">${tagCounts[tag]}</span>`;
-    item.onclick=()=>setView('abtag:'+tag);
+    item.onclick=()=>{setView('abtag:'+tag);if(window.innerWidth<=768)closeSidebar();};
     list.appendChild(item);
   });
 }
@@ -1998,6 +2083,14 @@ function setMode(mode,opts={}){
   if(isCompare) initCompare(opts);
   if(isDiff) dcInit();
   if(isBrowse && !S.currentView) showHub();
+}
+function toggleSidebar(){
+  const open=document.getElementById('sidebar').classList.toggle('sb-open');
+  document.getElementById('sb-backdrop').classList.toggle('sb-open',open);
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('sb-open');
+  document.getElementById('sb-backdrop').classList.remove('sb-open');
 }
 function goHome(){
   if(!document.getElementById('hub').classList.contains('hidden')) return;
