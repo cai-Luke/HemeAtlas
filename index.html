@@ -1492,54 +1492,7 @@ function renderHub(){
   hubResourcesEl.appendChild(cytoTileEl);
   hub.appendChild(hubResourcesEl);
 
-  // ── Cell Census ──
-  hub.insertAdjacentHTML('beforeend',`
-    <div class="hub-census" style="width:100%;max-width:900px;background:var(--surface);
-         border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;
-                  padding:14px 20px 10px;border-bottom:0.5px solid var(--border)">
-        <span style="font-size:13px;font-weight:600;color:var(--text)">Cell Census</span>
-        <span id="hub-updated" style="font-size:11px;color:var(--text3)"></span>
-      </div>
-      <div id="hub-census-rows" style="padding:8px 0"></div>
-    </div>`);
 
-  const updatedEl=document.getElementById('hub-updated');
-  if(updatedEl&&S.lastUpdated){
-    const d=new Date(S.lastUpdated);
-    const label=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    updatedEl.textContent=`Updated ${label}`;
-  }
-
-  const census={};
-  Object.values(S.records).forEach(r=>{
-    const lbl=effectiveLabel(r);
-    if(lbl) census[lbl]=(census[lbl]||0)+1;
-  });
-  const maxCount=Math.max(...Object.values(census));
-  const censusOrder=Object.keys(MATURATION).sort((a,b)=>MATURATION[a]-MATURATION[b]);
-  const censusRows=document.getElementById('hub-census-rows');
-  censusOrder.forEach(key=>{
-    const count=census[key]||0;
-    if(!count)return;
-    const pct=Math.round((count/maxCount)*100);
-    const displayName=CELL_DISPLAY[key]||key;
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:5px 20px;cursor:pointer;transition:background .12s';
-    row.onmouseenter=()=>row.style.background='var(--surface2)';
-    row.onmouseleave=()=>row.style.background='';
-    row.onclick=()=>{setMode('browse');setView(key);};
-    row.innerHTML=`
-      <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);
-                   width:130px;flex-shrink:0;white-space:nowrap">${esc(displayName)}</span>
-      <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-        <div style="width:${pct}%;height:100%;background:var(--accent);
-                    border-radius:3px;opacity:0.7"></div>
-      </div>
-      <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);
-                   width:44px;text-align:right;flex-shrink:0">${count.toLocaleString()}</span>`;
-    censusRows.appendChild(row);
-  });
 
   const trainImg=document.getElementById('hub-train-img');
   if(trainImg) applyRandomOrientation(trainImg);
